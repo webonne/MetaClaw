@@ -311,7 +311,7 @@
     <div class="meta">
       <span><i class="dot"></i><b>范围</b> CSDP 工单/客服链路（首个域）</span>
       <span><i class="dot"></i><b>证据源</b> 观测云 Guance · DQL</span>
-      <span><i class="dot"></i><b>状态</b> 架构已收敛 · v0.1</span>
+      <span><i class="dot"></i><b>状态</b> 架构已收敛 · v0.2 修订版</span>
     </div>
   </div>
 </header>
@@ -363,9 +363,9 @@
     <p class="sub">系统能不能上生产，取决于一条边界：<b>能确定的事交给查表与工具，模糊/未知的事才交给 LLM。</b> 这条边界划在「错误码是否命中」上——已决策锁定。</p>
 
     <div class="spine" style="margin-top:20px">
-      <div class="spine-top"><div class="node">告警 / 工单 / 手动 · 提取 <code style="background:transparent;border:none;color:var(--accent)">error_code</code></div></div>
+      <div class="spine-top"><div class="node">告警 / 工单 / 手动 · 提取 <code style="background:transparent;border:none;color:var(--accent)">system · error_code</code></div></div>
       <div class="arrow-down">↓</div>
-      <div class="spine-top"><div class="node decision">error_code 命中 SOP 库？</div></div>
+      <div class="spine-top"><div class="node decision">(system, error_code) 命中 SOP 库？</div></div>
       <div class="branch">
         <div class="path hit">
           <span class="tag">命中 · 确定性主干</span>
@@ -390,7 +390,7 @@
 
     <div class="principles" style="margin-top:18px">
       <div class="principle"><h4>取证也确定性化</h4><p>「问题定位」列落成每个错误码绑定的 DQL 模板，取证不靠 LLM 猜。</p></div>
-      <div class="principle"><h4>写操作永远人工确认</h4><p>只读取证全自动；重启 / 回滚 / 扩容等写操作一律 agent 只建议、人来点确认。</p></div>
+      <div class="principle"><h4>恢复动作三分级</h4><p>action_type 区分 auto_readonly（自动）/ human_contact（找对人）/ manual_write（写操作，人工确认）。度量看「可自动化率」，不拿覆盖率冒充。</p></div>
       <div class="principle"><h4>API-first</h4><p>核心只产出结构化「诊断结论对象」，IM 卡片与 Web 台都是它的视图。</p></div>
       <div class="principle"><h4>不训权重</h4><p>一/二期不碰 RL/GRPO 权重训练——只用 Skills 注入、Memory、Skill Evolver 三样非训练能力。</p></div>
     </div>
@@ -407,7 +407,7 @@
 
     <div class="layers" style="margin-top:18px">
       <div class="layer"><div class="ln">①</div><div><div class="lt">接入层 · Intake</div><div class="ld">告警(观测云 webhook)/工单/手动 → 标准化为「故障上下文对象」</div></div><div class="meq">—</div></div>
-      <div class="layer"><div class="ln">②</div><div><div class="lt">路由层 · Router</div><div class="ld">error_code 查表命中 → 场景/类型/级别/责任团队；未命中走未知分支</div></div><div class="meq">确定性</div></div>
+      <div class="layer"><div class="ln">②</div><div><div class="lt">路由层 · Router</div><div class="ld">(system, error_code) 复合键查表命中 → 场景/类型/级别/责任团队；未命中走未知分支</div></div><div class="meq">确定性</div></div>
       <div class="layer"><div class="ln">③</div><div><div class="lt">编排层 · Orchestrator</div><div class="ld">诊断流程编排：确认现象 → 取证 → 关联 → 出结论；规定工具、异常标尺、审批点</div></div><div class="meq">MetaClaw<br>Skills 注入</div></div>
       <div class="layer"><div class="ln">④</div><div><div class="lt">能力层 · Tools / Connectors</div><div class="ld">观测云连接器(DQL) · SOP 库查询 · 发布/配置/依赖拓扑(逐步接)</div></div><div class="meq">工程主体</div></div>
       <div class="layer"><div class="ln">⑤</div><div><div class="lt">协同 / 交付层</div><div class="ld">结构化结论 → IM 卡片 /（中长期）Web 台；跨团队带证据结构化流转；写操作人工确认</div></div><div class="meq">同一后端<br>多视图</div></div>
@@ -430,8 +430,8 @@
         <ul class="fields">
           <li><span class="k">incident_id</span></li>
           <li><span class="k">source</span> <span class="cm">alarm/ticket/manual</span></li>
-          <li><span class="k">service</span> · <span class="k">module</span></li>
-          <li><span class="k">error_code</span> <span class="cm">路由键</span></li>
+          <li><span class="k">system</span> · <span class="k">service</span> · <span class="k">module</span></li>
+          <li><span class="k">error_code</span> <span class="cm">与 system 构成复合路由键</span></li>
           <li><span class="k">trace_id</span></li>
           <li><span class="k">time_window</span></li>
           <li><span class="k">level</span> <span class="cm">P0–P3</span></li>
@@ -439,15 +439,15 @@
         </ul>
       </div>
       <div class="contract">
-        <div class="ch"><h4>SOP 条目</h4><div class="ty">SopEntry · 知识库 key=error_code</div></div>
+        <div class="ch"><h4>SOP 条目</h4><div class="ty">SopEntry · key=(system, error_code)</div></div>
         <ul class="fields">
-          <li><span class="k">error_code</span> · <span class="k">service</span></li>
+          <li><span class="k">system</span> · <span class="k">error_code</span> <span class="cm">复合键</span></li>
           <li><span class="k">scenario</span> · <span class="k">level</span></li>
           <li><span class="k">type</span> <span class="cm">依赖/业务/基础设施/数据/未知</span></li>
           <li><span class="k">cause</span> · <span class="k">impact</span></li>
           <li><span class="k">evidence_dql[]</span> <span class="badge-new">NEW</span></li>
           <li><span class="k">anomaly_criteria</span> <span class="badge-new">NEW</span></li>
-          <li><span class="k">recovery_steps[]</span> <span class="cm">含 requires_approval</span></li>
+          <li><span class="k">recovery_steps[]</span> <span class="cm">每步带</span> <span class="k">action_type</span> <span class="cm">auto_readonly/human_contact/manual_write</span> <span class="badge-new">NEW</span></li>
           <li><span class="k">owner_team</span></li>
           <li><span class="k">origin</span> <span class="cm">seed/evolved</span> · <span class="k">status</span> <span class="cm">candidate/approved</span> <span class="badge-new">NEW</span></li>
         </ul>
@@ -459,9 +459,9 @@
           <li><span class="k">sop_ref</span></li>
           <li><span class="k">evidence[]</span> <span class="cm">dql · result · is_anomaly</span></li>
           <li><span class="k">root_cause</span></li>
-          <li><span class="k">recommended_path[]</span></li>
-          <li><span class="k">pending_writes[]</span> <span class="cm">待人工确认</span></li>
-          <li><span class="k">route_to_team</span></li>
+          <li><span class="k">recommended_path[]</span> <span class="cm">每步带 action_type</span></li>
+          <li><span class="k">pending_writes[]</span> <span class="cm">manual_write · 待人工确认</span></li>
+          <li><span class="k">route_to_team</span> <span class="cm">human_contact 命中时</span></li>
           <li><span class="k">confidence</span> · <span class="k">summary</span></li>
         </ul>
       </div>
@@ -530,7 +530,7 @@
         <div class="st-body">
           <h4>接入标准化 <span class="actor a-sys">确定性系统</span></h4>
           <p>从告警负载抽取关键字段，归一成统一的故障上下文。</p>
-          <div class="obj"><b>产出</b> IncidentContext { error_code · trace_id · service · level · time_window }</div>
+          <div class="obj"><b>产出</b> IncidentContext { system · error_code · trace_id · service · level · time_window }</div>
         </div>
       </div>
       <div class="flow-arrow">↓</div>
@@ -539,7 +539,7 @@
         <div class="sb">3</div>
         <div class="st-body">
           <h4>路由分诊 <span class="actor a-sys">确定性系统</span></h4>
-          <p>用 error_code 查 SOP 库——这是「确定性 / 智能」的分叉点。</p>
+          <p>用 (system, error_code) 复合键查 SOP 库——这是「确定性 / 智能」的分叉点。</p>
           <div class="branch">
             <div class="path hit">
               <span class="tag">命中</span>
@@ -566,6 +566,7 @@
           <h4>自动取证 <span class="actor a-obs">观测云 DQL</span></h4>
           <p>执行 evidence_dql，一个 API 按命名空间拉回多源证据。</p>
           <div class="obj"><b>拉回</b> L:: 日志 &nbsp;·&nbsp; M:: 指标 &nbsp;·&nbsp; T:: 链路 &nbsp;·&nbsp; D:: 拨测</div>
+          <div class="loop-note" style="color:var(--p1);background:color-mix(in srgb,var(--p1) 9%,transparent);border-color:color-mix(in srgb,var(--p1) 40%,transparent)">⚠ 降级：观测云超时 / 不可用 → 退化为「SOP 文本 + 人工取证指引」，不阻塞流程，结论标注「证据未自动确认」</div>
         </div>
       </div>
       <div class="flow-arrow">↓</div>
@@ -780,6 +781,7 @@
       <div class="method-note">评审方法：调查研究 → 矛盾分析 → 批评与自我批评 · 数据取自《故障与措施》原表</div>
     </div>
     <p class="sub">架构骨架成立（双路脊柱、error_code 确定性键、两层知识库、API-first 均予保留）。但一次基于真实数据的复核暴露出一个诚实落差：<b>蓝图描绘的自动化程度，超出了现有知识资产能支撑的程度。</b></p>
+    <p class="sub" style="margin-top:8px">本 <b>v0.2 修订版</b>已把结构性问题 <b style="color:var(--hit)">R1 / R3 / R5</b> 落进正文各节（契约、原则、路由、运转图均已对齐）；<b>R2 / R4 / R6</b> 属知识与运营侧，非改文档能了结，仍待攻坚。</p>
 
     <div class="crux">
       <div class="lab">主要矛盾</div>
@@ -800,7 +802,7 @@
       <div class="risk"><span class="sev sev-hi">🔴 高</span><div>
         <h4>R1 · 蓝图美化了「自动化程度」</h4>
         <p>recovery_steps 被画得像可自动执行，但真实数据近半是「联系某人」。</p>
-        <div class="fix"><b>修正</b>recovery_step 增加 <code>action_type: auto_readonly / human_contact / manual_write</code>；度量单列「<b style="color:var(--accent)">可自动化率</b>」，不拿覆盖率冒充自动化率。对上汇报据实：一期本质是智能分诊+取证+找对人。</div>
+        <div class="fix"><b>修正 · ✓ 本版已落地</b>recovery_step 增加 <code>action_type: auto_readonly / human_contact / manual_write</code>（已入契约与设计原则）；度量单列「<b style="color:var(--accent)">可自动化率</b>」，不拿覆盖率冒充自动化率。对上汇报据实：一期本质是智能分诊+取证+找对人。</div>
       </div></div>
       <div class="risk"><span class="sev sev-hi">🔴 高</span><div>
         <h4>R2 · <code>anomaly_criteria</code>（什么算异常）是悬空设计</h4>
@@ -810,7 +812,7 @@
       <div class="risk"><span class="sev sev-hi">🔴 高</span><div>
         <h4>R3 · 取证层单点依赖观测云，无降级</h4>
         <p>「一个 API 覆盖多源」的反面是：故障高峰时观测云自身可能慢/挂，那一刻排障系统失明。蓝图通篇理想链路，无失败态。</p>
-        <div class="fix"><b>修正</b>加降级路径（DQL 超时 → 退化为 SOP 文本 + 人工取证指引），运转图补一条异常分支。</div>
+        <div class="fix"><b>修正 · ✓ 本版已落地</b>加降级路径（DQL 超时 → 退化为 SOP 文本 + 人工取证指引），运转图取证阶段已补一条降级分支。</div>
       </div></div>
       <div class="risk"><span class="sev sev-mid">🟡 中</span><div>
         <h4>R4 · 未知异常闭环有审核瓶颈但未定义</h4>
@@ -820,7 +822,7 @@
       <div class="risk"><span class="sev sev-mid">🟡 中</span><div>
         <h4>R5 · 契约不自洽：裸键 vs 复合键</h4>
         <p>单系统契约里 error_code 仍是裸键，平台章节又要复合键 <code>(system,error_code)</code>，两处打架。</p>
-        <div class="fix"><b>修正</b>从一开始统一用复合键，单系统视为 system 恒定的特例，不留两套。</div>
+        <div class="fix"><b>修正 · ✓ 本版已落地</b>已统一为复合键 (system, error_code)——契约、路由层、双路脊柱、运转图均已对齐；单系统视为 system 恒定的特例。</div>
       </div></div>
       <div class="risk"><span class="sev sev-mid">🟡 中</span><div>
         <h4>R6 · 片面性：重技术架构、轻知识运营</h4>
@@ -861,7 +863,7 @@
   </section>
 
   <footer>
-    <span>IT 智能排障系统 · 架构与演进蓝图 v0.1</span>
+    <span>IT 智能排障系统 · 架构与演进蓝图 v0.2 修订版</span>
     <span>确定性优先 · LLM 兜底 · 人机协同 · 知识闭环</span>
   </footer>
 
