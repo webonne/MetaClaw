@@ -1,0 +1,763 @@
+<title>IT 智能排障系统 · 架构与演进蓝图</title>
+<style>
+  :root{
+    --paper:#F4F6F8; --surface:#FFFFFF; --surface-2:#EEF1F4;
+    --ink:#0F1620; --ink-2:#33404E; --muted:#5B6672; --faint:#8895A2;
+    --line:#E1E5EA; --line-strong:#CBD2DA;
+    --accent:#0E8A8F; --accent-soft:#DDF0F0;
+    --hit:#2E7D5B; --hit-soft:#E1F0E8;      /* 命中 / 确定性 */
+    --miss:#5B54C9; --miss-soft:#E8E6F8;    /* 未命中 / LLM */
+    --p0:#CF3B3B; --p1:#D9812A; --p2:#B8971F; --p3:#5E7A94;
+    --shadow:0 1px 2px rgba(15,22,32,.05), 0 8px 24px rgba(15,22,32,.05);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Roboto,sans-serif;
+    --maxw:themevar;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#0B1016; --surface:#121A22; --surface-2:#0F161D;
+      --ink:#E7ECF1; --ink-2:#C2CCD6; --muted:#8B98A6; --faint:#647280;
+      --line:#212C36; --line-strong:#2C3A46;
+      --accent:#2FB6BB; --accent-soft:#0F2C2D;
+      --hit:#4FB587; --hit-soft:#10241B;
+      --miss:#9089E8; --miss-soft:#1B1930;
+      --p0:#E4655F; --p1:#E39A4F; --p2:#D3B24A; --p3:#7C97AC;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0B1016; --surface:#121A22; --surface-2:#0F161D;
+    --ink:#E7ECF1; --ink-2:#C2CCD6; --muted:#8B98A6; --faint:#647280;
+    --line:#212C36; --line-strong:#2C3A46;
+    --accent:#2FB6BB; --accent-soft:#0F2C2D;
+    --hit:#4FB587; --hit-soft:#10241B;
+    --miss:#9089E8; --miss-soft:#1B1930;
+    --p0:#E4655F; --p1:#E39A4F; --p2:#D3B24A; --p3:#7C97AC;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --paper:#F4F6F8; --surface:#FFFFFF; --surface-2:#EEF1F4;
+    --ink:#0F1620; --ink-2:#33404E; --muted:#5B6672; --faint:#8895A2;
+    --line:#E1E5EA; --line-strong:#CBD2DA;
+    --accent:#0E8A8F; --accent-soft:#DDF0F0;
+    --hit:#2E7D5B; --hit-soft:#E1F0E8;
+    --miss:#5B54C9; --miss-soft:#E8E6F8;
+    --p0:#CF3B3B; --p1:#D9812A; --p2:#B8971F; --p3:#5E7A94;
+    --shadow:0 1px 2px rgba(15,22,32,.05), 0 8px 24px rgba(15,22,32,.05);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    line-height:1.68;font-size:16px;-webkit-font-smoothing:antialiased;letter-spacing:.1px}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+  section{padding:8px 0 4px}
+
+  a{color:var(--accent);text-underline-offset:3px}
+  h1,h2,h3{text-wrap:balance;line-height:1.25;margin:0}
+  p{margin:.6em 0}
+  code{font-family:var(--mono);font-size:.87em;background:var(--surface-2);
+    padding:.12em .4em;border-radius:4px;border:1px solid var(--line)}
+
+  /* eyebrow */
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent);display:inline-block}
+
+  /* ---------- header ---------- */
+  header.hero{border-bottom:1px solid var(--line);background:
+    radial-gradient(120% 100% at 100% 0%, var(--accent-soft) 0%, transparent 55%);}
+  .hero-inner{padding:64px 0 40px}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:20px}
+  .kicker b{color:var(--accent)}
+  h1.title{font-size:clamp(30px,5.2vw,50px);font-weight:750;letter-spacing:-.6px;margin:0 0 18px}
+  .lede{font-size:clamp(16px,2.1vw,19px);color:var(--ink-2);max-width:64ch;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:30px;font-family:var(--mono);
+    font-size:12.5px;color:var(--muted)}
+  .meta span{display:flex;align-items:center;gap:7px}
+  .meta b{color:var(--ink);font-weight:600}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+
+  /* ---------- section titles ---------- */
+  .sec-head{margin:56px 0 22px}
+  .sec-num{font-family:var(--mono);font-size:13px;color:var(--faint);font-weight:600}
+  h2{font-size:clamp(21px,3vw,27px);font-weight:700;letter-spacing:-.3px;margin-top:6px}
+  h3{font-size:17px;font-weight:670;margin:26px 0 8px}
+  .sub{color:var(--muted);font-size:15px;max-width:70ch}
+
+  /* ---------- generic card ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:20px 22px;box-shadow:var(--shadow)}
+  .grid{display:grid;gap:16px}
+  @media(min-width:680px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}}
+
+  .pain li{margin:.3em 0}
+  .goals{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+  .goals li{display:flex;gap:14px;align-items:flex-start;background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .goals .n{font-family:var(--mono);font-weight:700;color:var(--accent);font-size:14px;flex:none;
+    width:26px;height:26px;border-radius:6px;background:var(--accent-soft);display:grid;place-items:center}
+  .goals b{font-weight:660}
+
+  /* ---------- principle chips ---------- */
+  .principles{display:grid;gap:12px}
+  @media(min-width:680px){.principles{grid-template-columns:1fr 1fr}}
+  .principle{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:9px;padding:14px 16px}
+  .principle h4{margin:0 0 4px;font-size:15px;font-weight:670}
+  .principle p{margin:0;color:var(--muted);font-size:14px}
+
+  /* ---------- spine diagram ---------- */
+  .spine{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 20px;
+    box-shadow:var(--shadow)}
+  .spine-top{display:flex;justify-content:center;margin-bottom:6px}
+  .node{font-family:var(--mono);font-size:13px;font-weight:600;border-radius:8px;padding:10px 16px;
+    border:1px solid var(--line-strong);background:var(--surface-2);text-align:center}
+  .decision{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+  .branch{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+  @media(max-width:560px){.branch{grid-template-columns:1fr}}
+  .path{border-radius:11px;padding:16px 16px 14px;border:1px solid var(--line)}
+  .path.hit{background:var(--hit-soft);border-color:color-mix(in srgb,var(--hit) 40%,transparent)}
+  .path.miss{background:var(--miss-soft);border-color:color-mix(in srgb,var(--miss) 40%,transparent)}
+  .path .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+    font-weight:700;display:inline-flex;align-items:center;gap:7px;margin-bottom:9px}
+  .path.hit .tag{color:var(--hit)} .path.miss .tag{color:var(--miss)}
+  .path.hit .tag::before,.path.miss .tag::before{content:"";width:9px;height:9px;border-radius:50%}
+  .path.hit .tag::before{background:var(--hit)} .path.miss .tag::before{background:var(--miss)}
+  .path ol{margin:0;padding-left:18px;font-size:13.6px;color:var(--ink-2)}
+  .path ol li{margin:.28em 0}
+  .path .end{margin-top:11px;font-size:12.5px;color:var(--muted);font-family:var(--mono)}
+  .arrow-down{display:block;text-align:center;color:var(--faint);font-size:15px;margin:2px 0}
+
+  /* ---------- layer stack ---------- */
+  .layers{display:grid;gap:9px}
+  .layer{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:16px;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 16px;
+    transition:border-color .15s}
+  .layer:hover{border-color:var(--line-strong)}
+  .layer .ln{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);
+    text-align:center}
+  .layer .lt{font-weight:660;font-size:15.5px}
+  .layer .ld{color:var(--muted);font-size:13.5px;margin-top:1px}
+  .layer .meq{font-family:var(--mono);font-size:11px;color:var(--faint);text-align:right;
+    max-width:150px;line-height:1.4}
+  @media(max-width:600px){.layer{grid-template-columns:36px 1fr}.layer .meq{display:none}}
+
+  /* ---------- contracts ---------- */
+  .contract{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    box-shadow:var(--shadow)}
+  .contract .ch{padding:14px 16px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+  .contract .ch h4{margin:0;font-size:14.5px;font-weight:680;display:flex;align-items:center;gap:8px}
+  .contract .ch .ty{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+  .fields{padding:8px 16px 14px;margin:0;list-style:none;font-family:var(--mono);font-size:12.5px}
+  .fields li{padding:5px 0;border-bottom:1px dashed var(--line);color:var(--ink-2);
+    display:flex;flex-wrap:wrap;gap:2px 8px}
+  .fields li:last-child{border-bottom:none}
+  .fields .k{color:var(--accent);font-weight:600}
+  .fields .cm{color:var(--faint)}
+  .badge-new{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--hit);
+    border:1px solid color-mix(in srgb,var(--hit) 45%,transparent);border-radius:4px;padding:0 4px;
+    background:var(--hit-soft)}
+
+  /* ---------- table ---------- */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:13.6px;min-width:560px;background:var(--surface)}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{background:var(--surface-2);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-weight:650;font-family:var(--mono);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td .ns{font-family:var(--mono);font-weight:700;color:var(--accent)}
+  td.mono,.mono-c{font-family:var(--mono);font-size:12.5px}
+  tbody tr:hover{background:var(--surface-2)}
+
+  /* roadmap chips */
+  .lvl{font-family:var(--mono);font-weight:700;font-size:12.5px;color:var(--ink);
+    background:var(--surface-2);border:1px solid var(--line-strong);border-radius:6px;padding:2px 8px;white-space:nowrap}
+  .chip{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:650;border-radius:20px;
+    padding:2px 9px;letter-spacing:.03em}
+  .c-me{color:var(--accent);background:var(--accent-soft)}
+  .c-none{color:var(--faint);background:var(--surface-2)}
+
+  /* code block */
+  pre{font-family:var(--mono);font-size:12.6px;line-height:1.6;background:var(--surface);
+    border:1px solid var(--line);border-radius:11px;padding:16px 18px;overflow-x:auto;
+    box-shadow:var(--shadow);color:var(--ink-2)}
+  pre .cm{color:var(--faint)}
+  pre .kw{color:var(--accent);font-weight:600}
+  pre .st{color:var(--hit)}
+
+  /* decisions */
+  .decisions{display:grid;gap:14px}
+  .dec{display:grid;grid-template-columns:auto 1fr;gap:16px;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+  .dec .lock{font-size:15px;flex:none;width:34px;height:34px;border-radius:9px;background:var(--hit-soft);
+    color:var(--hit);display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--hit) 35%,transparent)}
+  .dec h4{margin:0 0 3px;font-size:15.5px;font-weight:680}
+  .dec p{margin:0;color:var(--muted);font-size:14px}
+  .dec .imp{margin-top:8px;font-size:13px;color:var(--ink-2);border-top:1px dashed var(--line);padding-top:8px}
+  .dec .imp b{color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:700}
+
+  /* next steps */
+  .steps{display:grid;gap:12px}
+  .step{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:14px 16px}
+  .step .s{font-family:var(--mono);font-size:12px;font-weight:700;flex:none;padding:3px 8px;border-radius:6px}
+  .step.done .s{background:var(--hit-soft);color:var(--hit)}
+  .step.todo .s{background:var(--surface-2);color:var(--muted)}
+  .step b{font-weight:660}
+  .step p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+
+  .callout{border:1px solid color-mix(in srgb,var(--p1) 40%,transparent);
+    background:color-mix(in srgb,var(--p1) 9%,transparent);border-radius:11px;padding:14px 18px;
+    font-size:14px;color:var(--ink-2)}
+  .callout b{color:var(--p1)}
+
+  footer{margin:64px 0 40px;padding-top:22px;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:12px;color:var(--faint);display:flex;flex-wrap:wrap;
+    justify-content:space-between;gap:10px}
+
+  /* ---------- runtime flow ---------- */
+  .flow-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .flow{display:grid;gap:0}
+  .stage{display:grid;grid-template-columns:40px 1fr;gap:16px;align-items:start;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+    box-shadow:var(--shadow)}
+  .stage .sb{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--accent);
+    width:32px;height:32px;border-radius:9px;background:var(--accent-soft);display:grid;place-items:center;
+    border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+  .stage .st-body{min-width:0}
+  .stage h4{margin:0 0 4px;font-size:15.5px;font-weight:670;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .stage p{margin:0;color:var(--muted);font-size:14px}
+  .stage .obj{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--ink-2);
+    display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:7px;padding:5px 11px}
+  .stage .obj b{color:var(--accent);font-weight:600}
+  .actor{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    font-weight:700;border-radius:20px;padding:2px 9px;white-space:nowrap}
+  .a-sys{color:var(--accent);background:var(--accent-soft)}
+  .a-obs{color:var(--p3);background:color-mix(in srgb,var(--p3) 16%,transparent)}
+  .a-llm{color:var(--miss);background:var(--miss-soft)}
+  .a-human{color:var(--p1);background:color-mix(in srgb,var(--p1) 14%,transparent)}
+  .a-loop{color:var(--hit);background:var(--hit-soft)}
+  .flow-arrow{text-align:center;color:var(--faint);font-size:15px;line-height:1;padding:6px 0}
+  .stage .branch{margin-top:12px}
+  .stage .path ol{font-size:13px}
+  .loop-note{margin-top:11px;font-family:var(--mono);font-size:12px;color:var(--hit);
+    display:flex;align-items:center;gap:9px;background:var(--hit-soft);
+    border:1px dashed color-mix(in srgb,var(--hit) 40%,transparent);border-radius:8px;padding:8px 12px;line-height:1.5}
+  @media(max-width:560px){.stage{grid-template-columns:1fr}.stage .sb{display:none}}
+
+  /* platform section helpers */
+  .wall{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    font-weight:700;color:var(--p0);background:color-mix(in srgb,var(--p0) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--p0) 35%,transparent);border-radius:5px;padding:1px 7px;
+    vertical-align:middle;margin-left:8px}
+  .c-wall{color:var(--p0);background:color-mix(in srgb,var(--p0) 12%,transparent)}
+  .c-later{color:var(--p3);background:color-mix(in srgb,var(--p3) 16%,transparent)}
+  .deleg{margin-top:12px;font-size:13px;color:var(--ink-2);background:var(--hit-soft);
+    border:1px dashed color-mix(in srgb,var(--hit) 40%,transparent);border-radius:9px;padding:11px 14px;line-height:1.55}
+  .deleg b{color:var(--hit)}
+  .axis{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:4px 0 6px}
+  @media(max-width:560px){.axis{grid-template-columns:1fr}}
+  .axis .ax{border:1px solid var(--line);border-radius:10px;padding:13px 16px;background:var(--surface)}
+  .axis .ax .lab{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    font-weight:700;margin-bottom:5px}
+  .axis .ax.depth .lab{color:var(--accent)} .axis .ax.width .lab{color:var(--miss)}
+  .axis .ax p{margin:0;font-size:13.5px;color:var(--muted)}
+
+  hr.soft{border:none;border-top:1px solid var(--line);margin:0}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div class="kicker">智能排障系统 · 基于 <b>MetaClaw</b> 元学习平台</div>
+    <h1 class="title">IT 智能排障系统<br>架构与演进蓝图</h1>
+    <p class="lede">把故障处理从「人工翻系统 + 经验判断」升级为「告警驱动 · 智能路由 · 自动取证 · 人机协同诊断 · 知识闭环」。本文沉淀前期讨论共识，作为团队对齐、立项与分工的基线。</p>
+    <div class="meta">
+      <span><i class="dot"></i><b>范围</b> CSDP 工单/客服链路（首个域）</span>
+      <span><i class="dot"></i><b>证据源</b> 观测云 Guance · DQL</span>
+      <span><i class="dot"></i><b>状态</b> 架构已收敛 · v0.1</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 1 背景 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">01</div>
+      <div class="eyebrow">背景与目标</div>
+      <h2>为什么做，以及做成什么样</h2>
+    </div>
+    <p class="sub">IT 系统组件相互依赖，排障已从单点定位变成跨系统、跨团队、跨数据源的综合诊断。当前高度依赖人工经验，在故障高峰、经验不均、链路复杂时容易响应慢、路径散、结论不一致、SLA 达不成。</p>
+
+    <div class="grid g2" style="margin-top:18px">
+      <div class="card">
+        <div class="eyebrow" style="color:var(--muted)">五个核心痛点</div>
+        <ol class="pain" style="margin:0;padding-left:18px;color:var(--ink-2);font-size:14px">
+          <li>排障入口分散——告警、日志、监控、变更各在一处，缺统一上下文视图</li>
+          <li>经验依赖严重——新人难判断「先查什么、怎么查、什么算异常」</li>
+          <li>SOP 难执行——多为静态文档，不能按告警自动匹配、取证、校验</li>
+          <li>跨团队协同成本高——群里反复追问，缺结构化流转</li>
+          <li>过程难沉淀——根因与判据处理完即散失，同类问题重复排查</li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="eyebrow" style="color:var(--muted)">三个预期效果</div>
+        <ul class="goals">
+          <li><span class="n">1</span><div><b>提升响应效率</b>——按告警内容/服务/错误码自动匹配场景与 SOP，给出推荐路径。</div></li>
+          <li><span class="n">2</span><div><b>缩短 MTTR</b>——自动聚合日志、指标、变更、依赖状态等证据，减少无效排查与跨团队等待。</div></li>
+          <li><span class="n">3</span><div><b>降低一线门槛</b>——专家经验固化为可执行 SOP，一线即可完成初诊、取证与分流。</div></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:16px">
+      <b>关键前提已具备。</b> 团队已有一份结构化的《故障与措施》知识库（服务 → 模块 → 功能 → 场景 → <b style="color:var(--ink)">错误码</b> → 恢复方案 → 问题定位 → 结构化日志），并含错误码体系与告警级别枚举。这让「专家经验固化」这一最难环节已完成大半——项目起点接近 <b style="color:var(--ink)">L0.5</b>。
+    </div>
+  </section>
+
+  <!-- 2 设计原则 / 双路脊柱 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">02</div>
+      <div class="eyebrow">核心设计原则</div>
+      <h2>确定性优先，LLM 兜底：双路脊柱</h2>
+    </div>
+    <p class="sub">系统能不能上生产，取决于一条边界：<b>能确定的事交给查表与工具，模糊/未知的事才交给 LLM。</b> 这条边界划在「错误码是否命中」上——已决策锁定。</p>
+
+    <div class="spine" style="margin-top:20px">
+      <div class="spine-top"><div class="node">告警 / 工单 / 手动 · 提取 <code style="background:transparent;border:none;color:var(--accent)">error_code</code></div></div>
+      <div class="arrow-down">↓</div>
+      <div class="spine-top"><div class="node decision">error_code 命中 SOP 库？</div></div>
+      <div class="branch">
+        <div class="path hit">
+          <span class="tag">命中 · 确定性主干</span>
+          <ol>
+            <li>查表拿到 SOP（原因 / 恢复方案 / 责任团队）</li>
+            <li>按 <code style="background:transparent;border:none">evidence_dql</code> 模板执行取证</li>
+            <li>LLM 仅做「判是否异常 + 合成人话结论」</li>
+          </ol>
+          <div class="end">→ 零幻觉 · 可审计 · 快</div>
+        </div>
+        <div class="path miss">
+          <span class="tag">未命中 · 未知异常分支</span>
+          <ol>
+            <li>LLM 分诊，动态构造 DQL 取证</li>
+            <li>人机协同定位，给出候选结论</li>
+            <li>处理完 → Skill Evolver 沉淀为新条目</li>
+          </ol>
+          <div class="end">→ 学习入口 · 越用越全</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="principles" style="margin-top:18px">
+      <div class="principle"><h4>取证也确定性化</h4><p>「问题定位」列落成每个错误码绑定的 DQL 模板，取证不靠 LLM 猜。</p></div>
+      <div class="principle"><h4>写操作永远人工确认</h4><p>只读取证全自动；重启 / 回滚 / 扩容等写操作一律 agent 只建议、人来点确认。</p></div>
+      <div class="principle"><h4>API-first</h4><p>核心只产出结构化「诊断结论对象」，IM 卡片与 Web 台都是它的视图。</p></div>
+      <div class="principle"><h4>不训权重</h4><p>一/二期不碰 RL/GRPO 权重训练——只用 Skills 注入、Memory、Skill Evolver 三样非训练能力。</p></div>
+    </div>
+  </section>
+
+  <!-- 3 六层架构 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">03</div>
+      <div class="eyebrow">目标架构</div>
+      <h2>六层分层与 MetaClaw 出力点</h2>
+    </div>
+    <p class="sub">MetaClaw 的能力只在 <b>③ 编排</b> 与 <b>⑥ 闭环</b> 两层真正吃到；② ④ 是确定性查表与连接器工程。右列标注每层是否用到 MetaClaw。</p>
+
+    <div class="layers" style="margin-top:18px">
+      <div class="layer"><div class="ln">①</div><div><div class="lt">接入层 · Intake</div><div class="ld">告警(观测云 webhook)/工单/手动 → 标准化为「故障上下文对象」</div></div><div class="meq">—</div></div>
+      <div class="layer"><div class="ln">②</div><div><div class="lt">路由层 · Router</div><div class="ld">error_code 查表命中 → 场景/类型/级别/责任团队；未命中走未知分支</div></div><div class="meq">确定性</div></div>
+      <div class="layer"><div class="ln">③</div><div><div class="lt">编排层 · Orchestrator</div><div class="ld">诊断流程编排：确认现象 → 取证 → 关联 → 出结论；规定工具、异常标尺、审批点</div></div><div class="meq">MetaClaw<br>Skills 注入</div></div>
+      <div class="layer"><div class="ln">④</div><div><div class="lt">能力层 · Tools / Connectors</div><div class="ld">观测云连接器(DQL) · SOP 库查询 · 发布/配置/依赖拓扑(逐步接)</div></div><div class="meq">工程主体</div></div>
+      <div class="layer"><div class="ln">⑤</div><div><div class="lt">协同 / 交付层</div><div class="ld">结构化结论 → IM 卡片 /（中长期）Web 台；跨团队带证据结构化流转；写操作人工确认</div></div><div class="meq">同一后端<br>多视图</div></div>
+      <div class="layer"><div class="ln">⑥</div><div><div class="lt">闭环层 · Feedback</div><div class="ld">过程/证据/根因 → 长期记忆；未知异常 → 候选条目 → 审核 → 晋升入库</div></div><div class="meq">MetaClaw<br>Memory+Evolver</div></div>
+    </div>
+  </section>
+
+  <!-- 4 三契约 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">04</div>
+      <div class="eyebrow">三个契约</div>
+      <h2>核心与前端之间的数据契约</h2>
+    </div>
+    <p class="sub">这三个 schema 是系统的稳定接缝，应<b>提前定义</b>：契约定早了，取证源可加、前端可换（IM→Web）、知识库可长，都不必返工。<span class="badge-new">NEW</span> 标记的字段是把已有《故障与措施》表真正「激活」的关键新增项。</p>
+
+    <div class="grid g3" style="margin-top:18px">
+      <div class="contract">
+        <div class="ch"><h4>故障上下文对象</h4><div class="ty">IncidentContext · ①产出</div></div>
+        <ul class="fields">
+          <li><span class="k">incident_id</span></li>
+          <li><span class="k">source</span> <span class="cm">alarm/ticket/manual</span></li>
+          <li><span class="k">service</span> · <span class="k">module</span></li>
+          <li><span class="k">error_code</span> <span class="cm">路由键</span></li>
+          <li><span class="k">trace_id</span></li>
+          <li><span class="k">time_window</span></li>
+          <li><span class="k">level</span> <span class="cm">P0–P3</span></li>
+          <li><span class="k">impact</span> · <span class="k">raw_payload</span></li>
+        </ul>
+      </div>
+      <div class="contract">
+        <div class="ch"><h4>SOP 条目</h4><div class="ty">SopEntry · 知识库 key=error_code</div></div>
+        <ul class="fields">
+          <li><span class="k">error_code</span> · <span class="k">service</span></li>
+          <li><span class="k">scenario</span> · <span class="k">level</span></li>
+          <li><span class="k">type</span> <span class="cm">依赖/业务/基础设施/数据/未知</span></li>
+          <li><span class="k">cause</span> · <span class="k">impact</span></li>
+          <li><span class="k">evidence_dql[]</span> <span class="badge-new">NEW</span></li>
+          <li><span class="k">anomaly_criteria</span> <span class="badge-new">NEW</span></li>
+          <li><span class="k">recovery_steps[]</span> <span class="cm">含 requires_approval</span></li>
+          <li><span class="k">owner_team</span></li>
+          <li><span class="k">origin</span> <span class="cm">seed/evolved</span> · <span class="k">status</span> <span class="cm">candidate/approved</span> <span class="badge-new">NEW</span></li>
+        </ul>
+      </div>
+      <div class="contract">
+        <div class="ch"><h4>诊断结论对象</h4><div class="ty">Diagnosis · ⑤产出 · 唯一契约</div></div>
+        <ul class="fields">
+          <li><span class="k">incident_id</span> · <span class="k">matched</span></li>
+          <li><span class="k">sop_ref</span></li>
+          <li><span class="k">evidence[]</span> <span class="cm">dql · result · is_anomaly</span></li>
+          <li><span class="k">root_cause</span></li>
+          <li><span class="k">recommended_path[]</span></li>
+          <li><span class="k">pending_writes[]</span> <span class="cm">待人工确认</span></li>
+          <li><span class="k">route_to_team</span></li>
+          <li><span class="k">confidence</span> · <span class="k">summary</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 观测云 DQL -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">05</div>
+      <div class="eyebrow">取证方案</div>
+      <h2>观测云 · 一个 DQL API 覆盖多源证据</h2>
+    </div>
+    <p class="sub">观测云连接器本质是「执行一条 DQL 查询」。DQL 的命名空间正好覆盖排障所需的全部证据类型——<b>换命名空间即换证据源</b>，让「跨源关联」几乎零额外接入成本。</p>
+
+    <div class="tbl-wrap" style="margin-top:16px">
+      <table>
+        <thead><tr><th>命名空间</th><th>证据类型</th><th>SOP 中的用途</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ns">L::</span></td><td>日志</td><td>按 trace_id / error_code / service 拉结构化日志，<b>确认现象</b></td></tr>
+          <tr><td><span class="ns">M::</span></td><td>指标</td><td>错误率、连接数、慢查询、磁盘 / 内存（MongoDB 类故障必需）</td></tr>
+          <tr><td><span class="ns">T::</span></td><td>链路 APM</td><td>按 trace_id 追调用链，定位是哪一跳失败</td></tr>
+          <tr><td><span class="ns">D::</span></td><td>拨测</td><td>外部可用性探测</td></tr>
+          <tr><td><span class="ns">R:: / E::</span></td><td>RUM / 事件</td><td>前端影响面、发布 / 变更事件</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>示例：错误码 903001（数据库访问异常）绑定的取证模板</h3>
+    <pre><span class="cm"># evidence_dql —— 与 error_code 绑定，取证确定性执行</span>
+<span class="kw">L::</span>csdp_log:(error_code, trace_id, error_msg, occur_time)
+   { service=<span class="st">?</span>, error_code=<span class="st">'903001'</span> } [time_window]
+
+<span class="kw">M::</span>mongodb:(connections, slow_queries, disk_used)
+   { host=<span class="st">'10.6.104.169'</span> } [time_window]
+
+<span class="cm"># LLM 只负责：对照 anomaly_criteria 判断是否异常，合成结论
+# recovery_steps → 联系 DBA 重启实例 / 参考 Mongo 恢复方案（requires_approval）</span></pre>
+
+    <div class="callout" style="margin-top:16px">
+      <b>部署约束。</b> 观测云端点为内网地址（<code style="background:transparent;border:none;color:inherit">*.prd.sangfor.com</code>），当前云端环境不可达。连接器与整个排障运行时最终须部署在<b>能访问内网</b>的环境；开发期可用录制响应打通逻辑，真实联调在内网进行。<code style="background:transparent;border:none;color:inherit">DF-API-KEY</code> 作为运行时密钥配置，不写入 SOP 正文或 prompt。
+    </div>
+  </section>
+
+  <!-- 6 运转全过程 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">06</div>
+      <div class="eyebrow">运转全过程</div>
+      <h2>一次故障从告警到闭环怎么跑</h2>
+    </div>
+    <p class="sub">静态架构说明「有哪些层」，这张运转图说明「一次故障实际怎么流动」——数据对象在阶段间传递，右侧色标注明每一步由谁执行：<span class="actor a-sys" style="margin:0 2px">确定性系统</span><span class="actor a-obs" style="margin:0 2px">观测云</span><span class="actor a-llm" style="margin:0 2px">LLM</span><span class="actor a-human" style="margin:0 2px">人工</span><span class="actor a-loop" style="margin:0 2px">MetaClaw</span></p>
+
+    <div class="flow" style="margin-top:20px">
+      <div class="stage">
+        <div class="sb">1</div>
+        <div class="st-body">
+          <h4>触发 <span class="actor a-obs">观测云 / 工单</span></h4>
+          <p>观测云告警 webhook 推送，或工单系统回调；亦支持手动发起。</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="stage">
+        <div class="sb">2</div>
+        <div class="st-body">
+          <h4>接入标准化 <span class="actor a-sys">确定性系统</span></h4>
+          <p>从告警负载抽取关键字段，归一成统一的故障上下文。</p>
+          <div class="obj"><b>产出</b> IncidentContext { error_code · trace_id · service · level · time_window }</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="stage">
+        <div class="sb">3</div>
+        <div class="st-body">
+          <h4>路由分诊 <span class="actor a-sys">确定性系统</span></h4>
+          <p>用 error_code 查 SOP 库——这是「确定性 / 智能」的分叉点。</p>
+          <div class="branch">
+            <div class="path hit">
+              <span class="tag">命中</span>
+              <ol>
+                <li>取出 SOP：原因 / 恢复方案 / 责任团队</li>
+                <li>取出绑定的 <code style="background:transparent;border:none">evidence_dql</code> 模板</li>
+              </ol>
+            </div>
+            <div class="path miss">
+              <span class="tag">未命中</span>
+              <ol>
+                <li>LLM 分诊，动态构造 DQL</li>
+                <li>标记为「未知异常」，进闭环学习</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓ &nbsp;两路汇合 &nbsp;↓</div>
+
+      <div class="stage">
+        <div class="sb">4</div>
+        <div class="st-body">
+          <h4>自动取证 <span class="actor a-obs">观测云 DQL</span></h4>
+          <p>执行 evidence_dql，一个 API 按命名空间拉回多源证据。</p>
+          <div class="obj"><b>拉回</b> L:: 日志 &nbsp;·&nbsp; M:: 指标 &nbsp;·&nbsp; T:: 链路 &nbsp;·&nbsp; D:: 拨测</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="stage">
+        <div class="sb">5</div>
+        <div class="st-body">
+          <h4>判断与合成 <span class="actor a-llm">LLM</span></h4>
+          <p>对照 anomaly_criteria 判断每条证据是否异常，把散乱证据合成人话结论。</p>
+          <div class="obj"><b>产出</b> Diagnosis { 证据 · 根因 · 推荐路径 · 待确认写操作 · 责任团队 }</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="stage">
+        <div class="sb">6</div>
+        <div class="st-body">
+          <h4>交付展示 <span class="actor a-sys">同一后端 · 多视图</span></h4>
+          <p>诊断结论对象渲染为 IM 卡片 /（中长期）Web 台：证据 + 推荐路径 + 待确认写操作一屏呈现。</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="stage">
+        <div class="sb">7</div>
+        <div class="st-body">
+          <h4>人机协同 <span class="actor a-human">人工</span></h4>
+          <p>一线确认结论；需跨团队时带齐证据结构化流转（不再群里从头追问）；写操作人工确认后执行 → 恢复 → 关闭工单。</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="stage">
+        <div class="sb">8</div>
+        <div class="st-body">
+          <h4>知识闭环 <span class="actor a-loop">MetaClaw</span></h4>
+          <p>过程、证据、根因写入长期记忆；若为未知异常，Skill Evolver 生成候选条目 → 人工审核 → 晋升入库。</p>
+          <div class="loop-note">↺ 新条目回流 SOP 库——下次同一 error_code 直接走确定性主干（步骤 3 命中）</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 演进路线 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">07</div>
+      <div class="eyebrow">演进方式</div>
+      <h2>能力成熟度阶梯 L0 → L5</h2>
+    </div>
+    <p class="sub">按 <b>竖切 → 加源 → 加智能 → 加闭环</b> 推进，每级独立交付价值并为下一级降风险。原则：先打通一个错误码的完整竖线，再横向复制——每个 error_code 就是一个可独立上线的小闭环。</p>
+
+    <div class="tbl-wrap" style="margin-top:16px">
+      <table>
+        <thead><tr><th>级别</th><th>能力</th><th>交付价值</th><th>依赖</th><th>MetaClaw</th></tr></thead>
+        <tbody>
+          <tr><td><span class="lvl">L0</span></td><td>知识底座——xlsx → 结构化 SOP 库（error_code 可查）</td><td>静态查询已快过翻文档</td><td class="mono">无（现可做）</td><td><span class="chip c-none">—</span></td></tr>
+          <tr><td><span class="lvl">L1</span></td><td>单点取证——单错误码竖切，观测云按 trace_id 拉日志确认</td><td>验证地基，单场景自动取证</td><td class="mono">观测云 API</td><td><span class="chip c-none">—</span></td></tr>
+          <tr><td><span class="lvl">L2</span></td><td>端到端诊断——告警驱动 + 编排 SKILL，自动路由/取证/出结论</td><td><b>响应效率</b>兑现</td><td class="mono">L1 + 编排层</td><td><span class="chip c-me">Skills</span></td></tr>
+          <tr><td><span class="lvl">L3</span></td><td>跨源关联——日志+指标+链路+发布变更；跨团队结构化流转</td><td><b>MTTR</b> 大幅缩短</td><td class="mono">多命名空间</td><td><span class="chip c-me">Skills</span></td></tr>
+          <tr><td><span class="lvl">L4</span></td><td>人机协同+闭环——写操作人工确认；未知异常→候选→晋升</td><td><b>降低门槛</b>，知识不靠人</td><td class="mono">L3 + 记忆</td><td><span class="chip c-me">Memory · Evolver</span></td></tr>
+          <tr><td><span class="lvl">L5</span></td><td>自进化——相似历史召回、SOP 命中率自优化、路由自学习</td><td>越用越准，去个人依赖</td><td class="mono">数据积累</td><td><span class="chip c-me">元学习</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="principle"><h4>「未知异常」是天然闭环入口</h4><p>《故障与措施》已列该分类（全局中间件捕获、未登记）。命中走确定性 SOP，落到未知即触发 MetaClaw 学习——接口已埋好。</p></div>
+      <div class="principle"><h4>协同层价值别排最后</h4><p>最痛的是「群里反复追问」。L3 的结构化流转——转 DBA 时自动带齐 trace_id/日志/已确认现象——是一线感知最强的价值点，值得在 L3 优先。</p></div>
+    </div>
+  </section>
+
+  <!-- 8 部门级复用 / 平台化 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">08</div>
+      <div class="eyebrow">部门级复用 · 平台化</div>
+      <h2>从单系统打样到多系统平台：横轴</h2>
+    </div>
+    <p class="sub">前面的 L0→L5 是<b>单系统能力深度</b>；多系统接入是另一根轴——<b>接入广度</b>。策略是先走深、再铺宽，而非一上来做通用平台。</p>
+
+    <div class="axis" style="margin-top:16px">
+      <div class="ax depth"><div class="lab">纵轴 · 能力深度</div><p>L0 → L5，把一个系统（CSDP）从知识底座打到自进化，验证闭环。</p></div>
+      <div class="ax width"><div class="lab">横轴 · 接入广度</div><p>从打样中抽出可复用平台能力，再横向低成本复制到部门内各系统。</p></div>
+    </div>
+    <p class="sub">下列带 <span class="wall" style="margin:0">承重墙</span> 的，需在 CSDP 打样阶段就<b>预留接口</b>，避免第二个系统接入时推翻重来；其余可等第 2–3 个系统再补。</p>
+
+    <h3>① 分层接入 —— 低摩擦与强自动化并存</h3>
+    <p class="sub">不强求所有系统先统一标准，按 <b>错误码粒度</b> 成熟：一个系统可以"部分标准"，高频码先走确定性，长尾继续 LLM。</p>
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>接入档</th><th>系统需提供</th><th>得到的能力</th></tr></thead>
+        <tbody>
+          <tr><td><span class="lvl">轻接入</span></td><td class="mono-c">仅告警（无结构化错误码）</td><td>走 LLM 诊断路，给推荐方向 + 通用中间件排查（≈每系统从 L1 起步）</td></tr>
+          <tr><td><span class="lvl">标准接入</span></td><td class="mono-c">结构化错误码 + trace_id + evidence_dql</td><td>确定性主干：自动取证、命中即答（L2+）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>② 复合路由键 —— 一条回退链 <span class="wall">承重墙</span></h3>
+    <p class="sub">路由键从平面 <code>error_code</code> 升级为<b>分层解析</b>，让"确定性优先、LLM 兜底"在多系统下依然成立。</p>
+    <div class="steps" style="margin-top:14px">
+      <div class="step"><span class="s" style="background:var(--hit-soft);color:var(--hit)">1</span><div><b>业务层精确命中</b> <code>(system, error_code)</code><p>拿业务 SOP；若 type=依赖异常且 cause 指向中间件 → 同时挂载公共层 SOP（委托取证与恢复）。</p></div></div>
+      <div class="step"><span class="s" style="background:var(--accent-soft);color:var(--accent)">2</span><div><b>公共层类型匹配</b> <code>(infra_type, signature)</code><p>业务层未命中，但错误可归类为基础设施（Redis/Mongo/MQ/网络）→ 查共享的公共层。</p></div></div>
+      <div class="step"><span class="s" style="background:var(--miss-soft);color:var(--miss)">3</span><div><b>LLM 诊断兜底</b><p>都没有（轻接入 / 无结构化码）→ LLM 动态取证诊断 → 生成候选条目回流知识库。</p></div></div>
+    </div>
+
+    <h3>③ 公共 / 业务两层知识库 <span class="wall">承重墙</span></h3>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="contract">
+        <div class="ch"><h4>公共层 · 全部门共享</h4><div class="ty">key = (infra_type, signature) · 平台团队维护</div></div>
+        <ul class="fields">
+          <li><span class="k">infra_type</span> <span class="cm">redis/mongo/mq/k8s/网关/网络</span></li>
+          <li><span class="k">signature</span> · <span class="k">evidence_dql[]</span></li>
+          <li><span class="k">recovery_steps[]</span></li>
+          <li><span class="k">owner_team</span> <span class="cm">中间件/平台</span></li>
+          <li><span class="cm">← 你们表里"参考中间件XX恢复方案"即此层</span></li>
+        </ul>
+      </div>
+      <div class="contract">
+        <div class="ch"><h4>业务层 · 每系统一套</h4><div class="ty">key = (system, error_code) · 各团队维护</div></div>
+        <ul class="fields">
+          <li><span class="k">system</span> · <span class="k">error_code</span></li>
+          <li><span class="k">cause</span> · <span class="k">type</span></li>
+          <li><span class="k">delegates_to</span> <span class="cm">→ 公共层条目</span></li>
+          <li><span class="k">recovery_steps[]</span> <span class="cm">仅业务特有部分</span></li>
+          <li><span class="k">owner_team</span> · <span class="k">visibility</span> · <span class="k">version</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="deleg"><b>委托去重 ↺</b> &nbsp;业务层 type=依赖异常 的条目不重写"怎么重启 Mongo"，只记"是 DB 问题"并委托公共层。CSDP 903001、B 系统 DB 错误、C 系统 DB 错误共用同一份公共层条目——N 个系统的中间件故障不再是 N 份重复 SOP。</div>
+
+    <h3>④ 平台化才需要的新能力 · 何时引入</h3>
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>能力</th><th>作用</th><th>何时引入</th></tr></thead>
+        <tbody>
+          <tr><td>接入规范 / onboarding 清单</td><td>system_id、告警字段映射、证据源绑定、依赖声明、审批路由——"平台 vs 工具"分水岭</td><td><span class="chip c-wall">打样预留</span></td></tr>
+          <tr><td>权限 / 隔离 / 密钥治理</td><td>跨部门只读权限集中，需数据隔离、审计、最小权限；写操作按系统 owner 路由审批</td><td><span class="chip c-wall">打样预留</span></td></tr>
+          <tr><td>服务依赖拓扑 / CMDB</td><td>跨系统根因（A 挂因 B 接口不通）与跨团队路由的前提</td><td><span class="chip c-later">第2-3系统</span></td></tr>
+          <tr><td>告警关联去重 / Incident 中心</td><td>一根因触发多系统告警时聚合成单 incident，防告警风暴与重复诊断</td><td><span class="chip c-later">第2-3系统</span></td></tr>
+          <tr><td>Incident 记录 + 度量体系</td><td>各系统 MTTR、命中率、自动化率、沉淀数——运营抓手 + 向上证明 ROI</td><td><span class="chip c-later">尽早埋点</span></td></tr>
+          <tr><td>SOP 生命周期 / 质量反馈</td><td>版本、废弃、"连续 N 次未解决 → 标记复审"，对抗知识过期</td><td><span class="chip c-later">第2-3系统</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 7 MetaClaw 复用 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">09</div>
+      <div class="eyebrow">平台复用</div>
+      <h2>MetaClaw 机制映射</h2>
+    </div>
+    <div class="tbl-wrap" style="margin-top:8px">
+      <table>
+        <thead><tr><th>MetaClaw 机制</th><th>在本系统的角色</th><th>用</th></tr></thead>
+        <tbody>
+          <tr><td class="mono-c">代理层 (api_server)</td><td>排障 agent 的统一入口，每轮按场景挂载排查逻辑</td><td><span class="chip c-me">是</span></td></tr>
+          <tr><td class="mono-c">Skills 注入 (SKILL.md)</td><td>编排层——把诊断流程作为薄 SKILL 稳定注入</td><td><span class="chip c-me">是</span></td></tr>
+          <tr><td class="mono-c">Memory (retriever/manager)</td><td>召回相似历史故障、根因与判据</td><td><span class="chip c-me">是</span></td></tr>
+          <tr><td class="mono-c">candidate → promotion</td><td>知识库演进——未知异常候选条目审核晋升</td><td><span class="chip c-me">是</span></td></tr>
+          <tr><td class="mono-c">Skill Evolver</td><td>从未知异常处理记录自动生成新 SOP</td><td><span class="chip c-me">是</span></td></tr>
+          <tr><td class="mono-c">RL / GRPO 权重训练</td><td>排障要可解释/可审计，暂不使用（或永不）</td><td><span class="chip c-none">否</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 8 决策记录 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">10</div>
+      <div class="eyebrow">决策记录</div>
+      <h2>已锁定的三个架构决定</h2>
+    </div>
+    <div class="decisions" style="margin-top:18px">
+      <div class="dec">
+        <div class="lock">✓</div>
+        <div>
+          <h4>D1 · 确定性 / 智能边界 = 「错误码是否命中」</h4>
+          <p>命中走纯查表 + DQL 模板取证（零幻觉、可审计）；未命中才上 LLM。</p>
+          <div class="imp"><b>下游约束</b> 取证也划到确定性侧；LLM 战场只剩未知异常、跨证据关联、结论合成三处。</div>
+        </div>
+      </div>
+      <div class="dec">
+        <div class="lock">✓</div>
+        <div>
+          <h4>D2 · 知识库可演进</h4>
+          <p>非静态死表——支持未知异常处理后「候选 → 审核 → 晋升入库」增量成长。</p>
+          <div class="imp"><b>下游约束</b> schema 自 L0 起带 <code style="background:transparent;border:none;color:inherit">origin</code> / <code style="background:transparent;border:none;color:inherit">status</code>；复用 MetaClaw memory 的 candidate/promotion 机制，不另造。</div>
+        </div>
+      </div>
+      <div class="dec">
+        <div class="lock">✓</div>
+        <div>
+          <h4>D3 · 中长期收敛到「故障上下文 Web 台」</h4>
+          <p>IM 机器人起步（贴现状、快），中长期统一到含时间线与证据看板的 Web 台。</p>
+          <div class="imp"><b>下游约束</b> 强制 API-first：核心只产出「诊断结论对象」，IM 与 Web 均为其视图；IM→Web 是加视图不是重做。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 下一步 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">11</div>
+      <div class="eyebrow">下一步</div>
+      <h2>待推进事项</h2>
+    </div>
+    <div class="steps" style="margin-top:14px">
+      <div class="step done"><span class="s">已完成</span><div><b>架构与演进蓝图</b><p>本文档——分层架构、双路脊柱、三契约、DQL 取证方案、L0→L5 路线图已对齐。</p></div></div>
+      <div class="step todo"><span class="s">待讨论</span><div><b>告警接入方式</b><p>观测云告警走 webhook 还是轮询？payload 是否带 error_code/trace_id/service——决定 ① 接入层设计与路由能否一步到位。</p></div></div>
+      <div class="step todo"><span class="s">待讨论</span><div><b>DQL 模板运营</b><p>先人工为高频错误码写 evidence_dql，还是从历史处理记录学习生成——关系到知识运营方式。</p></div></div>
+      <div class="step todo"><span class="s">待讨论</span><div><b>编排层落地形态</b><p>③ 做成 SKILL.md，还是 MetaClaw 代理层拦截时的固定流程——需核对注入时机。</p></div></div>
+      <div class="step todo"><span class="s">建议</span><div><b>L0 竖切起步</b><p>选错误码 903001，落地脱敏结构化 SOP 库 + 一条端到端竖线（可先用录制响应，不依赖内网）。</p></div></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>IT 智能排障系统 · 架构与演进蓝图 v0.1</span>
+    <span>确定性优先 · LLM 兜底 · 人机协同 · 知识闭环</span>
+  </footer>
+
+</main>
