@@ -266,6 +266,38 @@
   .axis .ax.depth .lab{color:var(--accent)} .axis .ax.width .lab{color:var(--miss)}
   .axis .ax p{margin:0;font-size:13.5px;color:var(--muted)}
 
+  /* risk & corrections */
+  .crux{border:1px solid color-mix(in srgb,var(--p0) 45%,transparent);
+    background:color-mix(in srgb,var(--p0) 8%,transparent);border-radius:12px;padding:18px 20px;margin-top:6px}
+  .crux .lab{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    font-weight:700;color:var(--p0);margin-bottom:9px}
+  .crux p{margin:0;font-size:15.5px;color:var(--ink);line-height:1.6}
+  .crux b{color:var(--p0)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-top:16px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:15px 16px;box-shadow:var(--shadow)}
+  .stat .num{font-family:var(--mono);font-weight:750;font-size:29px;line-height:1;letter-spacing:-1px;
+    font-variant-numeric:tabular-nums}
+  .stat .cap{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.45}
+  .stat .bar{height:5px;border-radius:3px;background:var(--surface-2);margin-top:11px;overflow:hidden}
+  .stat .bar i{display:block;height:100%;border-radius:3px}
+  .n-bad{color:var(--p0)} .n-warn{color:var(--p1)} .n-good{color:var(--hit)}
+  .b-bad{background:var(--p0)} .b-warn{background:var(--p1)} .b-good{background:var(--hit)}
+  .risks{display:grid;gap:13px;margin-top:16px}
+  .risk{display:grid;grid-template-columns:auto 1fr;gap:14px;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+  .risk .sev{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;
+    height:fit-content;white-space:nowrap}
+  .sev-hi{color:var(--p0);background:color-mix(in srgb,var(--p0) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--p0) 35%,transparent)}
+  .sev-mid{color:var(--p1);background:color-mix(in srgb,var(--p1) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--p1) 35%,transparent)}
+  .risk h4{margin:0 0 3px;font-size:15px;font-weight:670}
+  .risk p{margin:0;font-size:13.6px;color:var(--muted)}
+  .risk .fix{margin-top:8px;font-size:13.3px;color:var(--ink-2);border-top:1px dashed var(--line);padding-top:8px}
+  .risk .fix b{color:var(--hit);font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    text-transform:uppercase;font-weight:700;margin-right:7px}
+  .method-note{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-top:2px}
+
   hr.soft{border:none;border-top:1px solid var(--line);margin:0}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
@@ -739,10 +771,83 @@
     </div>
   </section>
 
-  <!-- 9 下一步 -->
+  <!-- 11 风险与修正 -->
   <section>
     <div class="sec-head">
       <div class="sec-num">11</div>
+      <div class="eyebrow">风险与修正</div>
+      <h2>用「实事求是」复核后的诚实修正</h2>
+      <div class="method-note">评审方法：调查研究 → 矛盾分析 → 批评与自我批评 · 数据取自《故障与措施》原表</div>
+    </div>
+    <p class="sub">架构骨架成立（双路脊柱、error_code 确定性键、两层知识库、API-first 均予保留）。但一次基于真实数据的复核暴露出一个诚实落差：<b>蓝图描绘的自动化程度，超出了现有知识资产能支撑的程度。</b></p>
+
+    <div class="crux">
+      <div class="lab">主要矛盾</div>
+      <p>系统的「自动化诊断能力」 ↔ 现有 SOP 知识的「结构化与可执行程度」——而矛盾的<b>主要方面在知识侧，不在技术侧</b>。系统天花板不由架构或 MetaClaw 决定，而由知识库里「错误码→可机器执行的取证与恢复」的高质量条目有多少决定。</p>
+    </div>
+
+    <h3>知识资产盘点（一手数据）</h3>
+    <div class="stats">
+      <div class="stat"><div class="num n-bad">~20%</div><div class="cap">端到端可自动化的场景占比（有可执行命令）</div><div class="bar"><i class="b-bad" style="width:21%"></i></div></div>
+      <div class="stat"><div class="num n-warn">30–52%</div><div class="cap">错误码 / 场景「有恢复方案」的比例</div><div class="bar"><i class="b-warn" style="width:52%"></i></div></div>
+      <div class="stat"><div class="num n-warn">~50%</div><div class="cap">已有恢复方案中属「联系某人处理」式</div><div class="bar"><i class="b-warn" style="width:50%"></i></div></div>
+      <div class="stat"><div class="num n-good">100%</div><div class="cap">错误码注册完整（唯一的地基亮点）</div><div class="bar"><i class="b-good" style="width:100%"></i></div></div>
+    </div>
+    <p class="sub" style="margin-top:12px">含义：一半以上错误码没有可执行恢复；有恢复的里约一半是「路由给某个人」。若不补齐，系统会退化成「告警路由器 + 联系人推荐机」——仍有价值，但不是「自动取证 + 恢复」。</p>
+
+    <h3>风险清单与修正（治病救人：每条配改进）</h3>
+    <div class="risks">
+      <div class="risk"><span class="sev sev-hi">🔴 高</span><div>
+        <h4>R1 · 蓝图美化了「自动化程度」</h4>
+        <p>recovery_steps 被画得像可自动执行，但真实数据近半是「联系某人」。</p>
+        <div class="fix"><b>修正</b>recovery_step 增加 <code>action_type: auto_readonly / human_contact / manual_write</code>；度量单列「<b style="color:var(--accent)">可自动化率</b>」，不拿覆盖率冒充自动化率。对上汇报据实：一期本质是智能分诊+取证+找对人。</div>
+      </div></div>
+      <div class="risk"><span class="sev sev-hi">🔴 高</span><div>
+        <h4>R2 · <code>anomaly_criteria</code>（什么算异常）是悬空设计</h4>
+        <p>新增了该字段，但真实表里几乎没写；缺它则 LLM 判异常等于拍脑袋。</p>
+        <div class="fix"><b>修正</b>列为知识补全头等任务，优先给高频错误码人工写异常判据——比 evidence_dql 更关键。</div>
+      </div></div>
+      <div class="risk"><span class="sev sev-hi">🔴 高</span><div>
+        <h4>R3 · 取证层单点依赖观测云，无降级</h4>
+        <p>「一个 API 覆盖多源」的反面是：故障高峰时观测云自身可能慢/挂，那一刻排障系统失明。蓝图通篇理想链路，无失败态。</p>
+        <div class="fix"><b>修正</b>加降级路径（DQL 超时 → 退化为 SOP 文本 + 人工取证指引），运转图补一条异常分支。</div>
+      </div></div>
+      <div class="risk"><span class="sev sev-mid">🟡 中</span><div>
+        <h4>R4 · 未知异常闭环有审核瓶颈但未定义</h4>
+        <p>candidate→promote 需人工审，却没定谁审、多快审；部门级时候选会堆积。</p>
+        <div class="fix"><b>修正</b>为公共层/业务层分别定义审核 owner 与晋升 SLA。</div>
+      </div></div>
+      <div class="risk"><span class="sev sev-mid">🟡 中</span><div>
+        <h4>R5 · 契约不自洽：裸键 vs 复合键</h4>
+        <p>单系统契约里 error_code 仍是裸键，平台章节又要复合键 <code>(system,error_code)</code>，两处打架。</p>
+        <div class="fix"><b>修正</b>从一开始统一用复合键，单系统视为 system 恒定的特例，不留两套。</div>
+      </div></div>
+      <div class="risk"><span class="sev sev-mid">🟡 中</span><div>
+        <h4>R6 · 片面性：重技术架构、轻知识运营</h4>
+        <p>谁来补那 70% 空缺的恢复方案？一线凭什么花时间写 SOP？知识侧恰是主要矛盾，却没有运营与激励机制——知识库会饿死。</p>
+        <div class="fix"><b>修正</b>把「知识运营机制」列为与技术并列的一条工作线：责任主体、补全激励、复审节奏。</div>
+      </div></div>
+    </div>
+
+    <h3>待调查假设（发言权存疑）</h3>
+    <p class="sub">以下是当成地基、却从未验证的假设，须在打样前查实——<b>不打无准备之仗</b>：</p>
+    <ul class="pain" style="margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px">
+      <li>观测云的<b>告警 payload 是否带 error_code / trace_id</b>——不带则路由要先 DQL 反查，多一跳且未必稳。</li>
+      <li>DQL 按 error_code 查日志的<b>字段名、是否有索引、查询延迟</b>——目前全是推测，未跑过一条真实查询。</li>
+    </ul>
+
+    <h3>集中兵力：修正后的第一步（伤其十指不如断其一指）</h3>
+    <div class="steps" style="margin-top:14px">
+      <div class="step"><span class="s" style="background:var(--accent-soft);color:var(--accent)">1</span><div><b>先摸家底，不写代码</b><p>盘点知识库，标出那 ~20% 真有「可 DQL 取证 + 非纯人工恢复」的错误码，作为打样候选池。</p></div></div>
+      <div class="step"><span class="s" style="background:var(--accent-soft);color:var(--accent)">2</span><div><b>补主要矛盾的短板</b><p>给候选池错误码补 <code>anomaly_criteria</code> 与 <code>evidence_dql</code>——这是知识侧的攻坚。</p></div></div>
+      <div class="step"><span class="s" style="background:var(--accent-soft);color:var(--accent)">3</span><div><b>验证地基假设后再打样</b><p>确认告警带 error_code、DQL 可高效查日志后，选一个错误码彻底打穿到生产可用，再横向复制。</p></div></div>
+    </div>
+  </section>
+
+  <!-- 12 下一步 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">12</div>
       <div class="eyebrow">下一步</div>
       <h2>待推进事项</h2>
     </div>
