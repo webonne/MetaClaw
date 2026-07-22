@@ -864,6 +864,44 @@
       <div class="principle"><h4>4 · 置信度校准 + abstain</h4><p>证据不足/矛盾 → 强制低置信 + 建议人工取证；宁可说查不准也不编，低置信不触发自动建议。</p></div>
       <div class="principle"><h4>5 · 上下文预算</h4><p>只把命中的方法论 skill + 本 incident 证据进 prompt，不灌整个 KB（用 MetaClaw top_k 检索控制）。</p></div>
     </div>
+
+    <h3>为什么不直接上 ReAct —— workflow 与 agent 分层用</h3>
+    <p class="sub">我们的 orchestrator 是 <b>code-planned workflow</b>（代码写死流程），不是 LLM 每步自主决定的 <b>ReAct agent</b>。区别在"谁开车"。</p>
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th></th><th>ReAct（LLM 自主）</th><th>我们的编排（code-planned）</th></tr></thead>
+        <tbody>
+          <tr><td class="mono-c">谁决定下一步</td><td>LLM 每步决定、自选工具</td><td>代码写死流程</td></tr>
+          <tr><td class="mono-c">执行路径</td><td>每次可能不同</td><td>固定 · 可复现 · 可审计</td></tr>
+          <tr><td class="mono-c">延迟 / 成本</td><td>多轮往返，慢而贵</td><td>少数几步，快而省</td></tr>
+          <tr><td class="mono-c">适合</td><td>未知 · 需灵活探索</td><td>已知套路 · 要可控</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub" style="margin-top:14px"><b>不是二选一，而是按双路脊柱分层用</b>：</p>
+    <div class="branch" style="margin-top:12px">
+      <div class="path hit">
+        <span class="tag">命中 · 已知</span>
+        <ol><li>code-planned <b>workflow</b>——固定流程</li><li>可控、可审计、快；套路已知不需自主</li></ol>
+      </div>
+      <div class="path miss">
+        <span class="tag">未命中 · 未知</span>
+        <ol><li>放出 <b>ReAct 式 agent</b> 自主探索</li><li>套笼子：DQL 白名单 + 结论强制低置信 + 人工确认</li></ol>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:14px;border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:color-mix(in srgb,var(--accent) 8%,transparent)">
+      呼应 Anthropic《Building Effective Agents》的判断：<b style="color:var(--accent)">能用 workflow 就别上 agent，只在真需要灵活性时才用 agent</b>。我们即：已知走 workflow，未知才放 agent 出来。
+    </div>
+
+    <h3>框架选型（骨架，不改架构）</h3>
+    <div class="principles" style="margin-top:14px">
+      <div class="principle"><h4>LangGraph <span style="font-family:var(--mono);font-size:10px;color:var(--accent)">推荐</span></h4><p>状态图 + 条件边 + human-in-the-loop 中断/checkpoint——天然对上"固定流程 + 命中/未命中分支 + 写操作审批闸门"。未命中节点可内嵌 ReAct 子 agent。</p></div>
+      <div class="principle"><h4>Pydantic AI</h4><p>强项是结构化输出 + 校验，正好对上"强 schema Diagnosis + 校验闸门"。更轻。</p></div>
+      <div class="principle"><h4>原生 SDK 自写</h4><p>命中路流程很短，用 tool-use + 一段自己的状态机也够——最轻、最可控。</p></div>
+    </div>
+    <div class="callout" style="margin-top:14px">
+      <b>三条硬约束</b>（否则架构就破）：① LLM 的 base_url 能指向 <b>MetaClaw</b>（OpenAI 兼容），才吃得到注入/记忆/沉淀；② 支持结构化输出 + 校验；③ 支持 human-in-the-loop 审批 + 工具走 MCP。<b>框架只是 orchestrator 的骨架——LLM 调用照样穿 MetaClaw、工具照样 MCP、信任五约束照样在校验层，用框架是省搭建、不是换设计。</b>
+    </div>
   </section>
 
   <!-- 8 决策记录 -->
