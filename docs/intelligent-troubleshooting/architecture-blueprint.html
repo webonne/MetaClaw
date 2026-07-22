@@ -408,7 +408,7 @@
     <div class="layers" style="margin-top:18px">
       <div class="layer"><div class="ln">①</div><div><div class="lt">接入层 · Intake</div><div class="ld">两入口：告警 webhook + 手动录入（可贴日志/现象，LLM 抽取）→ 归一提取为「故障上下文对象」</div></div><div class="meq">确定性<br>+LLM 抽取</div></div>
       <div class="layer"><div class="ln">②</div><div><div class="lt">路由层 · Router</div><div class="ld">(system, error_code) 复合键查表命中 → 场景/类型/级别/责任团队；未命中走未知分支</div></div><div class="meq">确定性</div></div>
-      <div class="layer"><div class="ln">③</div><div><div class="lt">编排层 · Orchestrator</div><div class="ld">诊断流程编排：确认现象 → 取证 → 关联 → 出结论；规定工具、异常标尺、审批点</div></div><div class="meq">MetaClaw<br>Skills 注入</div></div>
+      <div class="layer"><div class="ln">③</div><div><div class="lt">编排层 · Orchestrator</div><div class="ld">自建轻量 orchestrator 跑循环 / 调 MCP 工具 / 输出校验；LLM 调用走 MetaClaw，注入方法论与记忆（详见 §10）</div></div><div class="meq">自建 +<br>MetaClaw</div></div>
       <div class="layer"><div class="ln">④</div><div><div class="lt">能力层 · Tools / Connectors</div><div class="ld">观测云连接器(DQL) · SOP 库查询 · 发布/配置/依赖拓扑(逐步接)</div></div><div class="meq">工程主体</div></div>
       <div class="layer"><div class="ln">⑤</div><div><div class="lt">协同 / 交付层</div><div class="ld">结构化结论 → IM 卡片 /（中长期）Web 台；跨团队带证据结构化流转；写操作人工确认</div></div><div class="meq">同一后端<br>多视图</div></div>
       <div class="layer"><div class="ln">⑥</div><div><div class="lt">闭环层 · Feedback</div><div class="ld">过程/证据/根因 → 长期记忆；未知异常 → 候选条目 → 审核 → 晋升入库</div></div><div class="meq">MetaClaw<br>Memory+Evolver</div></div>
@@ -738,10 +738,79 @@
     </div>
   </section>
 
-  <!-- 8 决策记录 -->
+  <!-- 10 编排层与信任工程 -->
   <section>
     <div class="sec-head">
       <div class="sec-num">10</div>
+      <div class="eyebrow">编排层 · 信任工程</div>
+      <h2>③层怎么落：自建 orchestrator + MetaClaw</h2>
+    </div>
+    <p class="sub">这一节回答"故障上下文进来后，那个'大脑'到底怎么一步步跑、怎么防止 LLM 乱下结论"。基于 MetaClaw 代理层实际实现（<code>api_server.py</code> 的 skill 注入是<b>单轮拼进 system prompt</b>、工具调用在客户端执行）得出的结论。</p>
+
+    <div class="crux" style="border-color:color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 8%,transparent)">
+      <div class="lab" style="color:var(--accent)">MetaClaw 的边界</div>
+      <p>MetaClaw <b>每轮注入对的方法论 skill + 记忆</b>，会话后<b>沉淀经验</b>——但它<b>不跑多步循环、不执行工具</b>。跑循环、调 DQL、做输出校验是另一个宿主的事。</p>
+    </div>
+
+    <h3>③编排层 = 两半</h3>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="contract">
+        <div class="ch"><h4>自建轻量 orchestrator</h4><div class="ty">跑循环 · 调 MCP 工具 · 输出校验</div></div>
+        <ul class="fields">
+          <li><span class="cm">确认→取证→关联→结论 的多步循环</span></li>
+          <li><span class="k">调 MCP 工具</span> <span class="cm">SOP 查询 / 观测云 DQL</span></li>
+          <li><span class="k">校验闸门</span> <span class="cm">证据/置信度/审批标记</span></li>
+          <li><span class="cm">严格管控：确定性优先、写操作审批</span></li>
+        </ul>
+      </div>
+      <div class="contract">
+        <div class="ch"><h4>MetaClaw 代理</h4><div class="ty">orchestrator 的每次 LLM 调用都经它</div></div>
+        <ul class="fields">
+          <li><span class="k">Skills 注入</span> <span class="cm">按场景注入排障方法论</span></li>
+          <li><span class="k">Memory</span> <span class="cm">召回相似历史故障</span></li>
+          <li><span class="k">Skill Evolver</span> <span class="cm">未知异常经验沉淀为新 skill</span></li>
+          <li><span class="cm">拿到学习能力，不牺牲管控</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>两层 SOP —— 结构化 KB 与 MetaClaw skill 各管一段</h3>
+    <p class="sub">这也钉死了"SOP 到底存哪"：确定性数据走 KB（工具查、凭证不入模型），方法论走 MetaClaw skill（注入 prompt）。</p>
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th></th><th>结构化 KB</th><th>MetaClaw skill</th></tr></thead>
+        <tbody>
+          <tr><td class="mono-c">存哪</td><td>数据库 · error_code 主键</td><td>SKILL.md · MetaClaw 管</td></tr>
+          <tr><td class="mono-c">谁取</td><td>orchestrator 用 SOP 查询 MCP 工具精确查</td><td>MetaClaw 按场景注入 system prompt</td></tr>
+          <tr><td class="mono-c">管什么</td><td><span class="mono-c">evidence_dql</span> · 恢复步骤 · <span class="mono-c">anomaly_criteria</span></td><td>排障思路 / 判断框架 / 跨证据关联经验</td></tr>
+          <tr><td class="mono-c">凭证</td><td>不进 prompt，运行时引用</td><td>不含凭证，纯方法</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>控制流</h3>
+    <pre>IncidentContext
+  ├─<span class="kw">[命中]</span> SOP查询工具(system,error_code) → evidence_dql[] + 恢复步骤 + anomaly_criteria
+  │        └ orchestrator 逐条跑 DQL(MCP) → 证据
+  │        └ LLM(经 MetaClaw 注入方法论): 对照判据判 is_anomaly + 合成 Diagnosis(每判断引证据)
+  │        └ <span class="st">校验闸门</span>: 无证据/置信度不符 → 打回降级
+  └─<span class="kw">[未命中]</span> LLM 分诊: 白名单内动态构造 DQL → 取证 → 低置信结论 + 强制人工确认</pre>
+
+    <h3>LLM 信任工程 · 五条硬约束</h3>
+    <p class="sub">MetaClaw 不强制结构化输出，所以信任工程在 orchestrator + 工具契约层做——把 LLM 能"发挥"的面压到最小。</p>
+    <div class="principles" style="margin-top:14px">
+      <div class="principle"><h4>1 · 确定性优先</h4><p>LLM 从不生成恢复动作；命中时恢复步骤直接来自 KB，LLM 只做证据判读 + 话术合成。</p></div>
+      <div class="principle"><h4>2 · 强制引用证据</h4><p>每个 is_anomaly 判断必须绑定一条 evidence(dql+result)，无证据不许下判断。</p></div>
+      <div class="principle"><h4>3 · 结构化输出 + 校验闸门</h4><p>必须产出强 schema 的 Diagnosis，过校验：证据齐？置信度符？写操作都标 requires_approval？</p></div>
+      <div class="principle"><h4>4 · 置信度校准 + abstain</h4><p>证据不足/矛盾 → 强制低置信 + 建议人工取证；宁可说查不准也不编，低置信不触发自动建议。</p></div>
+      <div class="principle"><h4>5 · 上下文预算</h4><p>只把命中的方法论 skill + 本 incident 证据进 prompt，不灌整个 KB（用 MetaClaw top_k 检索控制）。</p></div>
+    </div>
+  </section>
+
+  <!-- 8 决策记录 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">11</div>
       <div class="eyebrow">决策记录</div>
       <h2>已锁定的三个架构决定</h2>
     </div>
@@ -770,13 +839,21 @@
           <div class="imp"><b>下游约束</b> 强制 API-first：核心只产出「诊断结论对象」，IM 与 Web 均为其视图；IM→Web 是加视图不是重做。</div>
         </div>
       </div>
+      <div class="dec">
+        <div class="lock">✓</div>
+        <div>
+          <h4>D4 · 编排 = 自建 orchestrator（LLM 走 MetaClaw）+ 工具走 MCP</h4>
+          <p>自建轻量 orchestrator 跑循环与输出校验；每次 LLM 调用经 MetaClaw 拿 skill 注入/记忆/沉淀；观测云连接器与 SOP 查询各做成 MCP server。</p>
+          <div class="imp"><b>下游约束</b> MetaClaw 只注入方法+学习、不跑循环；SOP 分两层（结构化 KB + MetaClaw skill）；信任工程五条约束落在 orchestrator + 工具契约层（详见 §10）。</div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- 11 风险与修正 -->
   <section>
     <div class="sec-head">
-      <div class="sec-num">11</div>
+      <div class="sec-num">12</div>
       <div class="eyebrow">风险与修正</div>
       <h2>用「实事求是」复核后的诚实修正</h2>
       <div class="method-note">评审方法：调查研究 → 矛盾分析 → 批评与自我批评 · 数据取自《故障与措施》原表</div>
@@ -850,16 +927,17 @@
   <!-- 12 下一步 -->
   <section>
     <div class="sec-head">
-      <div class="sec-num">12</div>
+      <div class="sec-num">13</div>
       <div class="eyebrow">下一步</div>
       <h2>待推进事项</h2>
     </div>
     <div class="steps" style="margin-top:14px">
-      <div class="step done"><span class="s">已完成</span><div><b>架构与演进蓝图</b><p>本文档——分层架构、双路脊柱、三契约、DQL 取证方案、L0→L5 路线图已对齐。</p></div></div>
-      <div class="step todo"><span class="s">待讨论</span><div><b>告警接入方式</b><p>观测云告警走 webhook 还是轮询？payload 是否带 error_code/trace_id/service——决定 ① 接入层设计与路由能否一步到位。</p></div></div>
-      <div class="step todo"><span class="s">待讨论</span><div><b>DQL 模板运营</b><p>先人工为高频错误码写 evidence_dql，还是从历史处理记录学习生成——关系到知识运营方式。</p></div></div>
-      <div class="step todo"><span class="s">待讨论</span><div><b>编排层落地形态</b><p>③ 做成 SKILL.md，还是 MetaClaw 代理层拦截时的固定流程——需核对注入时机。</p></div></div>
-      <div class="step todo"><span class="s">建议</span><div><b>L0 竖切起步</b><p>选错误码 903001，落地脱敏结构化 SOP 库 + 一条端到端竖线（可先用录制响应，不依赖内网）。</p></div></div>
+      <div class="step done"><span class="s">已完成</span><div><b>架构与演进蓝图</b><p>分层架构、双路脊柱、三契约、DQL 取证、L0→L5 路线图已对齐。</p></div></div>
+      <div class="step done"><span class="s">已定</span><div><b>告警接入方式</b><p>webhook + 手动录入两入口；手动支持贴日志/现象由 LLM 抽取；completeness 驱动路由；幂等键去重（详见 ①层 / §6 / 契约）。</p></div></div>
+      <div class="step done"><span class="s">已定</span><div><b>编排层落地形态</b><p>自建轻量 orchestrator（LLM 走 MetaClaw）+ 工具走 MCP；两层 SOP；信任工程五约束（详见 §10 · D4）。</p></div></div>
+      <div class="step todo"><span class="s">待讨论</span><div><b>DQL 模板运营</b><p>先人工为高频错误码写 evidence_dql，还是从历史处理记录学习生成——知识运营方式（R6 主要矛盾侧）。</p></div></div>
+      <div class="step todo"><span class="s">待讨论</span><div><b>上线取信策略</b><p>影子模式并行比对 + 历史故障回归集，逐步放权（架构议题 · trust & safety）。</p></div></div>
+      <div class="step todo"><span class="s">建议</span><div><b>L0 竖切起步</b><p>选错误码 903001，落地结构化 SOP 库 + 一条端到端竖线（可先用录制响应，不依赖内网）。</p></div></div>
     </div>
   </section>
 
