@@ -82,6 +82,11 @@
     border-radius:9px;padding:8px 12px 8px 32px;width:200px}
   .search::before{content:"⌕";position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--faint);font-size:15px}
 
+  .sysSel{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);
+    border:1px solid var(--line-strong);border-radius:9px;padding:7px 11px;cursor:pointer}
+  .syschip{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);
+    border:1px solid transparent;border-radius:5px;padding:1px 6px;white-space:nowrap}
+  .card .ec.light{color:var(--muted);background:var(--surface-3)}
   .list{display:grid;gap:9px}
   .card{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:6px 14px;background:var(--surface);
     border:1px solid var(--line);border-radius:12px;padding:13px 16px 13px 18px;cursor:pointer;transition:.13s;
@@ -205,7 +210,7 @@
   <div id="listView">
     <div class="apphead">
       <h1>故障工作台</h1><span class="tag">列表页 · 详情入口</span>
-      <p>值班总览：按级别 / 状态筛选，点任一故障进入详情页（版式 A）处置。数据取自真实错误码。</p>
+      <p>值班总览：按<b>系统</b> / 级别 / 状态筛选，点任一故障进入详情页（版式 A）处置。多系统接入，路由键为 <span class="mono">(system, error_code)</span>。</p>
     </div>
 
     <div class="summary">
@@ -216,6 +221,7 @@
     </div>
 
     <div class="toolbar">
+      <select class="sysSel" id="sysSel" onchange="setSys(this.value)"></select>
       <div class="tabs" id="tabs">
         <button class="tab on" data-f="all">全部 <span class="c" id="cAll"></span></button>
         <button class="tab" data-f="P0">P0 <span class="c" id="cP0"></span></button>
@@ -305,15 +311,46 @@
      tl:[{t:'13:58:10',x:'告警触发',w:'观测云',c:'done'},{t:'13:58:12',x:'路由命中 (csdp,801008)',w:'系统',c:'done'},{t:'13:58:15',x:'自动取证 · 确认数据缺失',w:'观测云',c:'now'},{t:'— —:—',x:'等待处置',w:'',c:'pending'}]}
   ];
 
-  let filter='all', cur=null;
+  // ---- 其他系统（部门级复用示例） ----
+  const EXTRA=[
+    {id:'ICARE-30201',sys:'iCare',sev:'P1',service:'icare-openapi',ecode:'30201',title:'工单同步接口超时',
+     impact:'渠道 · 工单状态不同步',type:'依赖异常 · 外部系统',trace:'a1b2c3d4-5e6f',sla:'22:40',slaCls:'mid',st:'diag',age:'6 分钟前',owner:'当班',
+     cause:'iCare openapi 同步接口响应超时，工单状态回写失败',conf:'高',confN:3,sop:'icare/sync-timeout（业务层）',
+     steps:[{tier:'auto',tl:'自动 · 只读',tx:'已拉取 iCare 调用链与错误日志',sub:'3 条 DQL',done:1},
+            {tier:'contact',tl:'联系 · 找人',tx:'联系 iCare 平台侧确认接口状态',sub:'外部系统 · 非本系统可自愈',act:'@ 通知',actMsg:'已在故障群 @iCare 值班'}],
+     ev:[{ns:'T::',d:'iCare 调用链',v:'超时 8.2s',f:'anom',dql:'<span class="kw">T::</span>tracing:(service,duration) { peer=<span class="st">\'icare-openapi\'</span> }',ml:'链路',mp:'csdp → <span class="st">icare-openapi 超时 8200ms ✗</span>'},
+         {ns:'M::',d:'iCare 接口 P99',v:'8.2s · 异常',f:'anom',dql:'<span class="kw">M::</span>http:(p99) { target=<span class="st">\'icare-openapi\'</span> } [近15m]'}],
+     tl:[{t:'14:14:00',x:'告警触发',w:'观测云',c:'done'},{t:'14:14:02',x:'路由命中 (iCare,30201)',w:'系统',c:'done'},{t:'14:14:05',x:'自动取证',w:'观测云',c:'now'},{t:'— —:—',x:'等待处置',w:'',c:'pending'}]},
+
+    {id:'PRM-40011',sys:'PRM',sev:'P2',service:'prm-sync',ecode:'40011',title:'处理人批量同步失败',
+     impact:'渠道 · 处理人列表滞后',type:'数据异常',trace:'b7c8d9e0-1a2b',sla:'01:12:30',slaCls:'cool',st:'todo',age:'20 分钟前',owner:'—',
+     cause:'PRM 批量同步任务部分失败，处理人数据未落库',conf:'中',confN:2,sop:'prm/batch-sync-fail（业务层）',
+     steps:[{tier:'auto',tl:'自动 · 只读',tx:'已查同步任务日志与失败明细',sub:'2 条 DQL',done:1},
+            {tier:'contact',tl:'联系 · 找人',tx:'联系 PRM 侧重跑失败批次',sub:'',act:'发起重跑',actMsg:'已发起 PRM 失败批次重跑'}],
+     ev:[{ns:'L::',d:'同步任务日志',v:'部分失败',f:'warn2',dql:'<span class="kw">L::</span>prm_log:(batch,status,fail_count) { status=<span class="st">\'FAIL\'</span> } [近30m]'}],
+     tl:[{t:'14:00:00',x:'告警触发',w:'观测云',c:'done'},{t:'14:00:03',x:'路由命中 (PRM,40011)',w:'系统',c:'done'},{t:'14:00:06',x:'自动取证',w:'观测云',c:'now'},{t:'— —:—',x:'等待处置',w:'',c:'pending'}]},
+
+    {id:'MKT-LP',sys:'MKT营销',sev:'P1',service:'mkt-activity',ecode:'—',light:1,title:'活动页大面积报错',
+     impact:'营销活动 · 落地页不可用',type:'未知异常 · 待归类',trace:'c3d4e5f6-7a8b',sla:'18:05',slaCls:'mid',st:'diag',age:'9 分钟前',owner:'当班',
+     cause:'（轻接入系统 · 无结构化错误码）LLM 分诊：疑似上游依赖超时导致落地页渲染失败，需人工确认',conf:'低',confN:1,sop:'— 未命中，走 LLM 分诊',
+     steps:[{tier:'auto',tl:'LLM · 取证',tx:'LLM 动态构造 DQL，拉取活动页错误日志',sub:'无预置 SOP · evidence_dql 由 LLM 生成',done:1},
+            {tier:'contact',tl:'联系 · 找人',tx:'联系营销系统 owner 确认现象',sub:'处理后可沉淀为标准接入（补录 SOP）',act:'@ 通知',actMsg:'已 @MKT 系统 owner'}],
+     ev:[{ns:'L::',d:'活动页错误日志（LLM 检索）',v:'量增 · 未判类',f:'warn2',dql:'<span class="kw">L::</span>mkt_log:(msg,url) { level=<span class="st">\'ERROR\'</span> } [近15m]  <span class="cm">// LLM 生成</span>'}],
+     tl:[{t:'14:11:00',x:'告警触发',w:'观测云',c:'done'},{t:'14:11:02',x:'error_code 未命中 → LLM 分诊',w:'系统',c:'done'},{t:'14:11:08',x:'LLM 动态取证',w:'LLM',c:'now'},{t:'— —:—',x:'待人工确认 + 沉淀 SOP',w:'',c:'pending'}]}
+  ];
+  DB.forEach(d=>{ if(!d.sys) d.sys='CSDP'; });
+  DB.push.apply(DB, EXTRA);
+
+  let filter='all', sysFilter='all', cur=null;
 
   window.toast=function(msg,ic){const t=document.createElement('div');t.className='toast';
     t.innerHTML=(ic?'<span class="ic">✓</span>':'')+'<span>'+msg+'</span>';$('#toasts').appendChild(t);
     setTimeout(()=>{t.style.transition='.3s';t.style.opacity='0';setTimeout(()=>t.remove(),300);},2500);};
 
+  function sysBase(){ return DB.filter(d=> sysFilter==='all' || d.sys===sysFilter); }
   function counts(){
-    const c={all:DB.length,P0:0,todo:0,diag:0};
-    DB.forEach(d=>{if(d.sev==='P0'&&d.st!=='closed')c.P0++;if(d.st==='todo')c.todo++;if(d.st==='diag')c.diag++;});
+    const base=sysBase(),c={all:base.length,P0:0,todo:0,diag:0};
+    base.forEach(d=>{if(d.sev==='P0'&&d.st!=='closed')c.P0++;if(d.st==='todo')c.todo++;if(d.st==='diag')c.diag++;});
     return c;
   }
   function matchFilter(d){
@@ -322,18 +359,26 @@
     if(filter==='diag')return d.st==='diag';
     return true;
   }
+  function initSysSel(){
+    const sysList=[...new Set(DB.map(d=>d.sys))];
+    $('#sysSel').innerHTML='<option value="all">全部系统 ('+sysList.length+')</option>'+
+      sysList.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+  }
+  window.setSys=function(v){ sysFilter=v; renderList(); };
   window.renderList=function(){
     const c=counts();
     $('#cAll').textContent=c.all;$('#cP0').textContent=c.P0;$('#cTodo').textContent=c.todo;$('#cDiag').textContent=c.diag;
+    $('#scP0').textContent=DB.filter(d=>d.sev==='P0'&&d.st!=='closed').length;
+    $('#scActive').textContent=DB.filter(d=>d.st==='todo'||d.st==='diag').length;
     const q=($('#q').value||'').trim().toLowerCase();
-    const rows=DB.filter(d=>matchFilter(d)&&(!q||d.ecode.toLowerCase().includes(q)||d.service.toLowerCase().includes(q)||d.title.toLowerCase().includes(q)));
+    const rows=sysBase().filter(d=>matchFilter(d)&&(!q||d.ecode.toLowerCase().includes(q)||d.service.toLowerCase().includes(q)||d.title.toLowerCase().includes(q)||d.sys.toLowerCase().includes(q)));
     const el=$('#list');
     if(!rows.length){el.innerHTML='<div class="empty-list">没有匹配的故障</div>';return;}
     el.innerHTML=rows.map(d=>`
       <div class="card" style="--sevc:${sevColor[d.sev]}" onclick="openDetail('${d.id}')" tabindex="0" onkeydown="if(event.key==='Enter')openDetail('${d.id}')">
         <span class="sv">${d.sev}</span>
         <div class="main">
-          <div class="ttl">${d.service} · ${d.title} <span class="ec">${d.ecode}</span></div>
+          <div class="ttl"><span class="syschip">${d.sys}</span>${d.service} · ${d.title} <span class="ec${d.light?' light':''}">${d.light?'轻接入·无码':d.ecode}</span></div>
           <div class="sub"><span><b>影响</b> ${d.impact}</span><span><b>类型</b> ${d.type}</span><span><b>处理人</b> ${d.owner}</span></div>
         </div>
         <div class="right">
@@ -353,13 +398,15 @@
     cur=DB.find(d=>d.id===id);const it=cur;
     const cc=(it.conf==='高'?'var(--ok)':it.conf==='中'?'var(--warn)':'var(--crit)');
     const anom=it.ev.filter(e=>e.f==='anom').length;
-    $('#crumb').textContent='工作台 / '+it.ecode+' '+it.title;
+    $('#crumb').textContent='工作台 / '+it.sys+' / '+(it.light?'轻接入':it.ecode)+' '+it.title;
     $('#detail').innerHTML=`
       <div class="ihead" style="--sevc:${sevColor[it.sev]}">
-        <div class="row1"><span class="svb">${it.sev}</span><h2>${it.service} · ${it.title}</h2><span class="ecb">${it.ecode}</span>
+        <div class="row1"><span class="svb">${it.sev}</span><span class="syschip">${it.sys}</span><h2>${it.service} · ${it.title}</h2>
+          <span class="ecb"${it.light?' style="color:var(--muted);background:var(--surface-3)"':''}>${it.light?'轻接入·无码':it.ecode}</span>
           <span class="status ${it.st}" id="stPill">${stLabel[it.st]}</span></div>
         <div class="row2">
           ${it.sla!=='—'?`<span class="slaBig"><span class="pulse"></span>SLA 剩余 <span id="slaBig" class="mono">${it.sla}</span></span>`:'<span class="mono" style="color:var(--muted)">外部依赖 · 无 SLA 计时</span>'}
+          <span><b>系统</b> ${it.sys}${it.light?' · 轻接入·LLM 分诊':''}</span>
           <span><b>影响</b> ${it.impact}</span><span><b>类型</b> ${it.type}</span><span><b>trace</b> <span class="mono">${it.trace}</span></span>
         </div>
       </div>
@@ -440,6 +487,6 @@
     const p=$('#stPill');if(p){p.className='status closed';p.textContent='已关闭';}logTL('14:24:10','关闭工单，过程归档','当班·人工');
     if(wb&&n)logTL('14:24:11','SOP 候选修正提交审核','闭环·Evolver');toast(wb?'已关闭，SOP 修正进入审核队列':'已归档关闭','ic');};
 
-  renderList();
+  initSysSel();renderList();
 })();
 </script>
