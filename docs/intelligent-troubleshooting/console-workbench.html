@@ -221,6 +221,7 @@
     </div>
 
     <div class="toolbar">
+      <button class="btn pri sm" onclick="openIntake()">＋ 手动录入</button>
       <select class="sysSel" id="sysSel" onchange="setSys(this.value)"></select>
       <div class="tabs" id="tabs">
         <button class="tab on" data-f="all">全部 <span class="c" id="cAll"></span></button>
@@ -486,6 +487,63 @@
   window.doClose=function(wb){const n=($('#sn')&&$('#sn').value||'').trim();closeOverlay();cur.st='closed';
     const p=$('#stPill');if(p){p.className='status closed';p.textContent='已关闭';}logTL('14:24:10','关闭工单，过程归档','当班·人工');
     if(wb&&n)logTL('14:24:11','SOP 候选修正提交审核','闭环·Evolver');toast(wb?'已关闭，SOP 修正进入审核队列':'已归档关闭','ic');};
+
+  // ---- 手动录入（intake：贴日志/现象 → LLM 抽取 → 路由）----
+  window.openIntake=function(){
+    const sysList=[...new Set(DB.map(d=>d.sys))];
+    modal.innerHTML=`<h4>手动录入故障</h4>
+      <p>粘贴一段报错日志、或用一句话描述现象——系统会尝试自动识别错误码并路由（命中 SOP / 疑似重复 / 未命中走 LLM）。</p>
+      <label>系统（必填 · 复合键）</label>
+      <select id="inSys" class="sysSel" style="width:100%">${sysList.map(s=>'<option>'+s+'</option>').join('')}</select>
+      <label>日志 / 现象 / 错误码</label>
+      <textarea rows="4" id="inText" placeholder="例：粘贴日志含 error_code=903001 …；或直接写「工单创建不了」"></textarea>
+      <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button>
+        <button class="btn pri sm" onclick="doIntake()">识别并创建</button></div>`;
+    openOverlay();
+  };
+  function extractCode(t){ const m=t.match(/\b(\d{6})\b/)||t.match(/([A-Za-z][A-Za-z0-9]+_[A-Za-z0-9_]+)/); return m?m[1]:null; }
+  window.doIntake=function(){
+    const sys=$('#inSys').value, text=($('#inText').value||'').trim();
+    if(!text){toast('请粘贴日志或描述现象');return;}
+    const ecode=extractCode(text);
+    closeOverlay();
+    if(ecode){
+      const dup=DB.find(d=>d.sys===sys&&d.ecode===ecode&&d.st!=='closed');
+      if(dup){toast('疑似重复：已关联到已有故障 '+ecode,'ic');openDetail(dup.id);return;}
+    }
+    const tpl=ecode?DB.find(d=>d.ecode===ecode):null;
+    const inc=buildIncident(sys,ecode,text,tpl);
+    DB.unshift(inc);initSysSel();renderList();
+    toast(tpl?('已识别 error_code='+ecode+' · 命中 SOP，已创建'):ecode?('已识别 error_code='+ecode+'（未登记）→ LLM 兜底'):'未识别到错误码 → 按 LLM 分诊创建','ic');
+    openDetail(inc.id);
+  };
+  function buildIncident(sys,ecode,text,tpl){
+    const id='M'+String(Date.now()).slice(-6), tr='manual-'+id;
+    const baseTl=[{t:'刚刚',x:'手动录入 · '+(ecode?('已抽取 error_code='+ecode):'未抽取到错误码'),w:'人工',c:'done'}];
+    if(tpl){
+      const c=JSON.parse(JSON.stringify(tpl));
+      c.id=id;c.sys=sys;c.trace=tr;c.st='diag';c.owner='当班';c.age='刚刚';c.light=0;
+      c.tl=baseTl.concat([{t:'刚刚',x:'命中 SOP，自动取证',w:'系统',c:'now'},{t:'— —:—',x:'等待处置',w:'',c:'pending'}]);
+      return c;
+    }
+    if(ecode){ // 有码但未登记 SOP → LLM 兜底，仍显示码
+      return {id:id,sys:sys,sev:'P2',service:'—',ecode:ecode,title:'（手动录入）'+text.slice(0,16),
+        impact:'待确认',type:'未知异常 · 码未登记',trace:tr,sla:'—',slaCls:'cool',st:'diag',age:'刚刚',owner:'当班',
+        cause:'error_code='+ecode+' 未登记 SOP，LLM 依据录入内容分诊：'+text.slice(0,40),conf:'低',confN:1,sop:'— 未登记，LLM 兜底',
+        steps:[{tier:'auto',tl:'LLM · 取证',tx:'LLM 依据录入内容动态构造 DQL 取证',sub:'无预置 SOP',done:1},
+               {tier:'contact',tl:'联系 · 找人',tx:'处理后补录该错误码的 SOP',sub:'可晋升为标准接入',act:'补录 SOP',actMsg:'已进入 SOP 候选队列'}],
+        ev:[{ns:'L::',d:'录入内容（LLM 检索）',v:'待判类',f:'warn2',dql:'<span class="cm">// LLM 依据录入内容生成</span>\n<span class="kw">L::</span>log:(error_code,msg) { error_code=<span class="st">\''+ecode+'\'</span> } [近15m]'}],
+        tl:baseTl.concat([{t:'刚刚',x:'error_code 未登记 → LLM 分诊',w:'LLM',c:'now'},{t:'— —:—',x:'待处置+沉淀',w:'',c:'pending'}])};
+    }
+    // 无码 → LLM 分诊（symptom）
+    return {id:id,sys:sys,sev:'P2',service:'—',ecode:'—',light:1,title:'（手动录入）'+(text.slice(0,16)||'现象描述'),
+      impact:'待确认',type:'未知异常 · 待归类',trace:tr,sla:'—',slaCls:'cool',st:'diag',age:'刚刚',owner:'当班',
+      cause:'（无结构化错误码）LLM 分诊：'+text.slice(0,40),conf:'低',confN:1,sop:'— 未命中，走 LLM 分诊',
+      steps:[{tier:'auto',tl:'LLM · 取证',tx:'LLM 依据现象描述动态构造 DQL 取证',sub:'symptom 输入 · 无预置 SOP',done:1},
+             {tier:'contact',tl:'联系 · 找人',tx:'联系系统 owner 确认现象并补录 SOP',sub:'处理后可沉淀为标准接入',act:'@ 通知',actMsg:'已通知系统 owner'}],
+      ev:[{ns:'L::',d:'现象相关日志（LLM 检索）',v:'待判类',f:'warn2',dql:'<span class="cm">// LLM 依据「'+text.slice(0,14)+'」生成</span>\n<span class="kw">L::</span>log { level=<span class="st">\'ERROR\'</span> } [近15m]'}],
+      tl:baseTl.concat([{t:'刚刚',x:'无错误码 → LLM 分诊',w:'LLM',c:'now'},{t:'— —:—',x:'待确认+沉淀',w:'',c:'pending'}])};
+  }
 
   initSysSel();renderList();
 })();

@@ -406,7 +406,7 @@
     <p class="sub">MetaClaw 的能力只在 <b>③ 编排</b> 与 <b>⑥ 闭环</b> 两层真正吃到；② ④ 是确定性查表与连接器工程。右列标注每层是否用到 MetaClaw。</p>
 
     <div class="layers" style="margin-top:18px">
-      <div class="layer"><div class="ln">①</div><div><div class="lt">接入层 · Intake</div><div class="ld">告警(观测云 webhook)/工单/手动 → 标准化为「故障上下文对象」</div></div><div class="meq">—</div></div>
+      <div class="layer"><div class="ln">①</div><div><div class="lt">接入层 · Intake</div><div class="ld">两入口：告警 webhook + 手动录入（可贴日志/现象，LLM 抽取）→ 归一提取为「故障上下文对象」</div></div><div class="meq">确定性<br>+LLM 抽取</div></div>
       <div class="layer"><div class="ln">②</div><div><div class="lt">路由层 · Router</div><div class="ld">(system, error_code) 复合键查表命中 → 场景/类型/级别/责任团队；未命中走未知分支</div></div><div class="meq">确定性</div></div>
       <div class="layer"><div class="ln">③</div><div><div class="lt">编排层 · Orchestrator</div><div class="ld">诊断流程编排：确认现象 → 取证 → 关联 → 出结论；规定工具、异常标尺、审批点</div></div><div class="meq">MetaClaw<br>Skills 注入</div></div>
       <div class="layer"><div class="ln">④</div><div><div class="lt">能力层 · Tools / Connectors</div><div class="ld">观测云连接器(DQL) · SOP 库查询 · 发布/配置/依赖拓扑(逐步接)</div></div><div class="meq">工程主体</div></div>
@@ -429,13 +429,13 @@
         <div class="ch"><h4>故障上下文对象</h4><div class="ty">IncidentContext · ①产出</div></div>
         <ul class="fields">
           <li><span class="k">incident_id</span></li>
-          <li><span class="k">source</span> <span class="cm">alarm/ticket/manual</span></li>
+          <li><span class="k">intake_source</span> <span class="cm">webhook / manual</span> <span class="badge-new">NEW</span></li>
           <li><span class="k">system</span> · <span class="k">service</span> · <span class="k">module</span></li>
           <li><span class="k">error_code</span> <span class="cm">与 system 构成复合路由键</span></li>
-          <li><span class="k">trace_id</span></li>
-          <li><span class="k">time_window</span></li>
+          <li><span class="k">completeness</span> <span class="cm">structured/log/symptom · 决定走哪条脊柱</span> <span class="badge-new">NEW</span></li>
+          <li><span class="k">trace_id</span> · <span class="k">time_window</span></li>
           <li><span class="k">level</span> <span class="cm">P0–P3</span></li>
-          <li><span class="k">impact</span> · <span class="k">raw_payload</span></li>
+          <li><span class="k">impact</span> · <span class="k">raw_input</span> <span class="cm">原始日志/现象</span></li>
         </ul>
       </div>
       <div class="contract">
@@ -519,8 +519,8 @@
       <div class="stage">
         <div class="sb">1</div>
         <div class="st-body">
-          <h4>触发 <span class="actor a-obs">观测云 / 工单</span></h4>
-          <p>观测云告警 webhook 推送，或工单系统回调；亦支持手动发起。</p>
+          <h4>接入触发 · 两个入口 <span class="actor a-obs">webhook</span> <span class="actor a-human">手动录入</span></h4>
+          <p>① 观测云 / 各系统告警 webhook 自动推送；② 一线手动录入——可直接贴一段日志或用一句话描述现象。</p>
         </div>
       </div>
       <div class="flow-arrow">↓</div>
@@ -528,9 +528,10 @@
       <div class="stage">
         <div class="sb">2</div>
         <div class="st-body">
-          <h4>接入标准化 <span class="actor a-sys">确定性系统</span></h4>
-          <p>从告警负载抽取关键字段，归一成统一的故障上下文。</p>
-          <div class="obj"><b>产出</b> IncidentContext { system · error_code · trace_id · service · level · time_window }</div>
+          <h4>归一 + 提取 <span class="actor a-sys">确定性</span> <span class="actor a-llm">LLM 抽取</span></h4>
+          <p>结构化输入直接取字段；只有日志/现象时由 LLM 抽取 error_code / trace_id。<b>completeness 决定走哪条脊柱</b>——抽到码回确定性主干，抽不到走 LLM 分诊。</p>
+          <div class="obj"><b>产出</b> IncidentContext { system · error_code? · completeness · trace_id · raw_input }</div>
+          <div class="loop-note" style="color:var(--muted);background:var(--surface-2);border-color:var(--line)">↺ 幂等键 (system, error_code, service, 时间桶)：疑似重复则关联到已有 incident，不重复开单</div>
         </div>
       </div>
       <div class="flow-arrow">↓</div>
@@ -834,7 +835,7 @@
     <h3>待调查假设（发言权存疑）</h3>
     <p class="sub">以下是当成地基、却从未验证的假设，须在打样前查实——<b>不打无准备之仗</b>：</p>
     <ul class="pain" style="margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px">
-      <li>观测云的<b>告警 payload 是否带 error_code / trace_id</b>——不带则路由要先 DQL 反查，多一跳且未必稳。</li>
+      <li>观测云的<b>告警 payload 是否带 error_code / trace_id</b>——不带则路由要先 DQL 反查，多一跳且未必稳。<span style="color:var(--hit)">（已部分兜底：手动入口可贴日志由 LLM 抽取补齐）</span></li>
       <li>DQL 按 error_code 查日志的<b>字段名、是否有索引、查询延迟</b>——目前全是推测，未跑过一条真实查询。</li>
     </ul>
 
