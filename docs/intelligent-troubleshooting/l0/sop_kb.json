@@ -1,0 +1,7949 @@
+[
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "一键授权登录",
+  "scenario": "获取手机号码",
+  "error_code": "901002",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "检查最近是否发版改动，必要时进行版本回退",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "联系伟彬关闭微信小程序白名单限制",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "需要查看微信返回的错误码才能知道具体错误原因",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Customer_GetOpenIdFailed_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"获取微信OpenId失败(GetJsCode2Session)，微信API返回错误码: %d, 错误信息: %s, 重试次数: %d/%d\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[wechat.go:167] [GetJsCode2Session] -> [httpc.GetCompatible] -> [api.weixin.qq.com]\",\n  \"source\": \"[wechat.go:218] [GetJsCode2Session]\",\n  \"occur_time\": \"2026-02-26 14:21:22\"\n}",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "微信获取手机号错误 / 微信限制错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "一键授权登录",
+  "scenario": "",
+  "error_code": "101013",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "获取的手机号码未空"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "一键授权登录",
+  "scenario": "",
+  "error_code": "101014",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "必要时需要查询MDM客户中是否存在客户信息",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "通过手机号码获取用户错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "一键授权登录",
+  "scenario": "排队入队失败",
+  "error_code": "101015",
+  "level": "P0",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "1. 检查Redis状态，确认 Redis 集群是否正常。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "2. 检查内存使用 ，Redis 内存是否接近 maxmemory。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查队列数据，确认排队队列 Sorted Set 是否正常，队列长度是否异常堆积。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 手动重试入队，如果是瞬时故障恢复后，通过上游创建会话接口重新触发排队（会自动幂等入队）。",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Cti_EnqueueFailed_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"CTI排队入队失败，taskID: %s, priority: %d, Redis Lua脚本执行异常: %s, queueKey: %s\",\n  \"suggest_msg\": \"1. 登录Rancher检查Redis集群状态(csdp命名空间); 2. 检查Redis内存使用率是否接近上限(maxmemory); 3. 检查Redis Sorted Set的queueKey是否存在异常数据; 4. 观测云搜索trace_id关联上游创建会话流程\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[redis.go:63] [RedisQueue.Enqueue] -> [redis.Eval]\",\n  \"source\": \"[redis.go:63] [RedisQueue.Enqueue]\",\n  \"occur_time\": \"2026-02-26 14:21:22\"\n}",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "通过用户ID获取微信用户错误 / 获取微信用户失败 / 查询微信用户不存在 / Redis Lua脚本执行失败（ZADD/ZSCORE操作异常）"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "一键授权登录",
+  "scenario": "",
+  "error_code": "101011",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "通过用户的授权信息mcode在MDM中查不到信息",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "通过mc查询大数据存在异常",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "如果是用户或者企业信息不存在，需要查看MDM是否存在数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "查询企业错误 / 未找到企业信息"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "一键授权登录",
+  "scenario": "",
+  "error_code": "101066",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "不是异常，不用介入处理",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "用户需要进行注册"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "一键授权登录",
+  "scenario": "快速登录",
+  "error_code": "101017",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "解除数据绑定，引导用户重新注册",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果是用户或者企业信息不存在，需要查看MDM是否存在数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "如果工单找不到，首先去ICARE查看是否存在工单，如果不存在需要重新进行同步",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "通过接口日志查看ICARE返回错误后确定错误根因",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "查询用户错误 / 未找到用户信息 / 查询错误 / 未找到客户信息"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "一键授权登录",
+  "scenario": "",
+  "error_code": "902002",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "设置Session失败 / 设置缓存失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "工单分享登录",
+  "error_code": "901004",
+  "level": "P1",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "需要重新启动csdp-wechat的POD容器",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "大面积异常时，需要切换灾备环境",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "查看是否权限没有放通",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "查看是否出口IP没有进入白名单",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "微信获取OpenID错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101020",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "必要时需要进行数据补偿",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "更新用户信息错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101027",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "分享码获取工单错误 / 分享码获取工单未空"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101029",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "工单号获取工单错误 / 工单号获取工单未空"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101031",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "必要时需要查询MDM客户中是否存在客户信息",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "获取客户信息错误 / 获取客户信息未空"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101064",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "工单号与手机号不匹配 / 工单与手机号码不匹配 / 手机号码不匹配"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101078",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "授权手机号与邀请注册手机号不一 / 手机号码不匹配"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101040",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "查看网络权限是否放通",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "提交工单申请放通权限",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "根据企信宝返回的错误信息进行错误定位",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "企信宝访问错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101080",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "企信宝未找到客户"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "工单分享码登录",
+  "scenario": "",
+  "error_code": "101089",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "手机号码已经注册"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "立即注册",
+  "scenario": "",
+  "error_code": "101103",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "生成用户ID错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "立即注册",
+  "scenario": "",
+  "error_code": "101104",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "生成CCode错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "登录",
+  "function": "立即注册",
+  "scenario": "微信获取手机号",
+  "error_code": "101024",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "代码部署回滚（csdp-wechat）sz3-s-prd集群和sz4-s-zaibei集群",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-ccntgtkm/explorer/apps.deployment",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-vkh8l9vf/explorer/apps.deployment",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "保存用户和微信用户错误 / 客户注册逻辑错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "订阅状态",
+  "scenario": "获取订阅状态",
+  "error_code": "101025",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "客户缓存的信息不存在的提示",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "引导用户需要重新登录",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "必要时可以解绑用户后进行重新绑定及注册",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "用户未登录 / 登录Session错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "IM登录",
+  "scenario": "IM登录",
+  "error_code": "101091",
+  "level": "P1",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "未进行设备认证"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "IM登录",
+  "scenario": "客户登录",
+  "error_code": "101004",
+  "level": "P0",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "CSP的服务是否故障，需要重新启动POD",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "需要根据日志信息进行精确查找登录异常",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "1. 确认失败环节",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "根据日志关键字定位具体查询失败",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "按日志区分是用户/角色/渠道信息哪一步失败",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "2. 检查渠道用户数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 partner_user 中有记录",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.partner_user.findOne({puid: <puid>, channel_code: '<channelId>'})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查角色分配",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认用户角色数据完整",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.partner_user_role.findOne({user_id: <puid>}) 和 db.partner_role.findOne({role_id: '<roleId>'})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 检查 MDM 渠道数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 mdm_channel 数据同步正常",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "db.mdm_channel.findOne({channel_id: '<channelId>'})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "5. 补录数据恢复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据缺失时通过 MDM 同步或手动补录",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "触发 MDM 数据同步，或在对应集合中手动补录缺失记录",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Customer_IMLoginDataFail_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"客户IM登录数据查询失败，userId: %d, ccode: %d, 失败环节: %s(认证级别/用户信息/IM映射), 错误: %s, 客户无法登录IM\",\n  \"suggest_msg\": \"1. 认证级别无效: 检查session中authLevel字段, 确认客户已完成设备认证流程; 2. 用户信息查询失败: 检查MongoDB连接状态, db.srv_user.findOne({user_id: <id>}); 3. 用户信息为空: 确认用户注册流程是否正常完成(srv_user中有记录); 4. IM映射写入失败: 检查im_user表写入权限和MongoDB连接\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[csp_service.go:96] [CspService.CspLogin] -> [userRepo.GetUserByUserId]\",\n  \"source\": \"[csp_service.go:96] [CspService.CspLogin]\",\n  \"occur_time\": \"2026-0",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "IM登录错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "IM登录",
+  "scenario": "",
+  "error_code": "101047",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "保存IM映射错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "在线联系",
+  "scenario": "",
+  "error_code": "901006",
+  "level": "P1",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "小T是否异常，紧急联系小T侧进行排查",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": "小T生成Token失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "在线联系",
+  "scenario": "",
+  "error_code": "1004",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "内部错误 / 加密手机号码错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "紧急保障",
+  "scenario": "",
+  "error_code": "101056",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "通过用户的授权信息mcode在MDM中查不到信息",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询客户错误 / 未找到客户信息"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "紧急保障",
+  "scenario": "",
+  "error_code": "301032",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "根据日志查看异常原因",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "首先确认ICARE系统是否异常",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "排查ITGW是否异常",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "创建问题工单错误 / 创建问题工单单号未空"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "获取产品线",
+  "error_code": "101063",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "用户为登录，缓存失效，需要重新登录",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "无效访问"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "",
+  "error_code": "101005",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "获取产品列表错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "",
+  "error_code": "201010",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道错误 / 未找到渠道信息"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "验证渠道越权",
+  "error_code": "201008",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "渠道是否越权",
+  "error_code": "301045",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示，需要确认上游数据是否有符合条件的数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "在ICARE-客户管理-查看确认客户选择的有相对应的服务商",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "渠道与客户的渠道不匹配 / 渠道不是工单渠道"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "查询渠道接口人",
+  "error_code": "201014",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询接口人错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "查询系统管理员",
+  "error_code": "201013",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询管理员错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "ICARE创建工单",
+  "error_code": "301002",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "根据日志查看异常原因",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "首先确认ICARE系统是否异常",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "排查ITGW是否异常",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "首先查看观测云日志或者群消息，提取出创建工单所需要的数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "例如：{\"url\":\"https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/channel/updateFinish?app=CSDP\\u0026time=1770258988\\u0026token=502bd552710232c4f034af7b2845a58b\",\"header\":{\"Authorization\":\"Bearer <BEARER_TOKEN>\"},\"content\":{\"loginPrmUserId\":\"10661735\",\"loginPrmUserName\":\"麦俊峰\",\"loginPrmUserComId\":\"SI045737\",\"workOrderId\":\"T2026011601448\",\"workOrderCode\":\"T2026011601448\",\"remark\":\"\",\"syncCustomerDetail\":\"1.10集群和15集群存储资源紧张，将已关机的1TB以上的虚拟机迁移到236集群上\"},\"error\":\"return data code is not ok! 请录入工时后才能完结工单\"}",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误的提示，需改错误的内容，修改异常数据后，通过Postman或者Apipost重新触发",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "curl --request POST \\",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "--url 'https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/save?app=CSDP%2Fu0026time%3D1770258988%2Fu0026token%3D502bd552710232c4f034af7b2845a58b' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Accept: */*' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Accept-Encoding: gzip, deflate, br' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Authorization: Bearer <BEARER_TOKEN>' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Connection: keep-alive' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Content-Type: application/json' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'User-Agent: PostmanRuntime-ApipostRuntime/1.1.0' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--data '{",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"loginPrmUserId\": \"10661735\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"loginPrmUserName\": \"麦俊峰\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"loginPrmUserComId\": \"SI045737\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"workOrderId\": \"T2026011601448\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"workOrderCode\": \"T2026011601448\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"remark\": \"\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"syncCustomerDetail\": \"1.10集群和15集群存储资源紧张，将已关机的1TB以上的虚拟机迁移到236集群上\"",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "}'",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "联系智胜处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "iCare create work order err",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "创建工单错误 / 创建工单单号未空 / ICARE创建工单异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "创建工单",
+  "scenario": "创建服务工单",
+  "error_code": "301005",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "创建服务工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301021",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "工单详情",
+  "error_code": "101062",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果工单找不到，首先去ICARE查看是否存在工单，如果不存在需要重新进行同步",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "通过接口日志查看ICARE返回错误后确定错误根因",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "查询用户手机号错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301042",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果工单找不到，首先去ICARE查看是否存在工单，如果不存在需要重新进行同步",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "通过接口日志查看ICARE返回错误后确定错误根因",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "查询T单错误 / 未找到T单数据 / 查询工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301009",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询Q单错误 / 未找到Q单数据"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301022",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询服务工单错误 / 服务工单不存在"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301006",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "ICARE确认完结"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "101101",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "无用户权限"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301031",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "工单评价错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "服务升级",
+  "error_code": "902005",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "锁定Redis值失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301058",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "当前工单暂时不能升级"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301020",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果工单找不到，首先去ICARE查看是否存在工单，如果不存在需要重新进行同步",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "查询服务工单错误 / 服务工单不存在"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301012",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果工单找不到，首先去ICARE查看是否存在工单，如果不存在需要重新进行同步",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "通过接口日志查看ICARE返回错误后确定错误根因",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "服务工单不存在 / 查询服务工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301050",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "工单已经完结 / 服务工单已经完结"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务工单列表",
+  "scenario": "",
+  "error_code": "301044",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "工单已经升级 / 服务工单已经升级"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务升级",
+  "scenario": "服务升级",
+  "error_code": "2300",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询服务升级Token错误 / 服务升级Token已使用 / 服务升级Token不符合规范"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务升级",
+  "scenario": "",
+  "error_code": "2302",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "服务升级Token失效"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务升级",
+  "scenario": "",
+  "error_code": "301043",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "服务工单状态已经变更"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务升级",
+  "scenario": "",
+  "error_code": "301030",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "通过接口日志查看ICARE返回错误后确定错误根因",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "ICARE服务升级错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "服务升级",
+  "scenario": "",
+  "error_code": "301018",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "更新服务工单状态错误 / 更新服务工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "驳回工单",
+  "scenario": "",
+  "error_code": "301033",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "ICARE驳回工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "Q单重开",
+  "scenario": "Q单重开",
+  "error_code": "301035",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "通过接口日志查看ICARE返回错误后确定错误根因",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "ICARE重开Q单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "首页",
+  "function": "维保查询",
+  "scenario": "维保查询",
+  "error_code": "101102",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查找维保数据错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "会话详情",
+  "function": "服务升级",
+  "scenario": "会话服务升级",
+  "error_code": "101084",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "根据返回错误定位错误根因",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "客户未登录"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "会话详情",
+  "function": "服务升级",
+  "scenario": "",
+  "error_code": "401008",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "验证升级资格错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "会话详情",
+  "function": "服务升级",
+  "scenario": "",
+  "error_code": "401004",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "创建会话失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "会话详情",
+  "function": "服务升级",
+  "scenario": "",
+  "error_code": "501009",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "请求CTI队列错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "我的",
+  "function": "解绑帐号",
+  "scenario": "",
+  "error_code": "101032",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询IM用户错误 / 未找到IM用户"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "我的",
+  "function": "解绑帐号",
+  "scenario": "",
+  "error_code": "401001",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "检查未完结会话"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "我的",
+  "function": "解绑帐号",
+  "scenario": "",
+  "error_code": "301008",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "检查未完结工单"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "我的",
+  "function": "解绑帐号",
+  "scenario": "",
+  "error_code": "401003",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "更新未完结会话失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "我的",
+  "function": "解绑帐号",
+  "scenario": "",
+  "error_code": "901011",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "清除Session错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "我的",
+  "function": "解绑帐号",
+  "scenario": "",
+  "error_code": "901013",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "更新Sessino错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "设备认证",
+  "function": "SN设备认证",
+  "scenario": "SN设备认证",
+  "error_code": "902003",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "获取Session失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "设备认证",
+  "function": "SN设备认证",
+  "scenario": "",
+  "error_code": "101071",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "检索企业已经过期"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "设备认证",
+  "function": "查询企业名称",
+  "scenario": "查询企业名称",
+  "error_code": "101070",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "无效的企业名称"
+ },
+ {
+  "system": "CSDP",
+  "service": "客服侧",
+  "module": "设备认证",
+  "function": "查询企业名称",
+  "scenario": "",
+  "error_code": "101034",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "企信宝获取企业名称错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "工单列表",
+  "scenario": "工单列表",
+  "error_code": "201004",
+  "level": "P1",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道用户角色错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "工单列表",
+  "scenario": "",
+  "error_code": "1008",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "系统错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "受理工单",
+  "scenario": "判断渠道归属",
+  "error_code": "301039",
+  "level": "P1",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据中台重新对数据进行推送",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "工单不属于该渠道"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "受理工单",
+  "scenario": "",
+  "error_code": "201005",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据中台重新对数据进行推送",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道人员错误 / 未找到渠道人员"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "受理工单",
+  "scenario": "",
+  "error_code": "301003",
+  "level": "",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "联系智胜处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": "I CARE受理工单错误 / ICARE受理工单异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "新建工时",
+  "scenario": "",
+  "error_code": "301040",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "通过接口日志查看ICARE返回错误后确定错误根因",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "渠道用户无权限"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "新建工时",
+  "scenario": "",
+  "error_code": "201006",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据中台重新对数据进行推送",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道用户角色错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "新建工时",
+  "scenario": "",
+  "error_code": "201007",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道角色错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "编辑详情",
+  "scenario": "",
+  "error_code": "101090",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "ICARE编辑详情错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "编辑详情",
+  "scenario": "",
+  "error_code": "301013",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "编辑详情错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "分派工单",
+  "scenario": "",
+  "error_code": "301046",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "当前渠道无分派权限"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "分派工单",
+  "scenario": "",
+  "error_code": "301017",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "ICARE分派工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "完结工单",
+  "scenario": "",
+  "error_code": "301023",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询关联Q单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "完结工单",
+  "scenario": "",
+  "error_code": "301048",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "关联Q单未关闭"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "完结工单",
+  "scenario": "",
+  "error_code": "301007",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "ICARE关闭工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "创建工单",
+  "scenario": "创建工单",
+  "error_code": "101060",
+  "level": "P1",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据中台重新对数据进行推送",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询MDM客户错误 / 未找到MDM客户"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "创建工单",
+  "scenario": "",
+  "error_code": "201009",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据中台重新对数据进行推送",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询MDM渠道错误 / 未找到MDM渠道"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "创建工单",
+  "scenario": "",
+  "error_code": "301011",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "创建服务工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "在线联系",
+  "scenario": "在线联系",
+  "error_code": "301019",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据中台重新对数据进行推送",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据可以从ICARE进行重新推送",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询服务工单错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "在线联系",
+  "scenario": "",
+  "error_code": "301051",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "工单未受理"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "在线联系",
+  "scenario": "",
+  "error_code": "301052",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "受理人一致才能联系"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "在线联系",
+  "scenario": "",
+  "error_code": "401005",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "保存会话用户失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "在线联系",
+  "scenario": "",
+  "error_code": "301053",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "用户未登录过小程序"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "在线联系",
+  "scenario": "",
+  "error_code": "201012",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "需在渠道PRM消息通知模块进行消息订阅及入驻绑定的操作",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道是否入驻"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "服务工单",
+  "function": "在线联系",
+  "scenario": "",
+  "error_code": "101092",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "渠道未入驻"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "客户咨询",
+  "function": "IM登录",
+  "scenario": "渠道登录",
+  "error_code": "201003",
+  "level": "P0",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "1. 确认失败环节",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "根据日志关键字定位具体查询失败",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "按日志区分是用户/角色/渠道信息哪一步失败",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "2. 检查渠道用户数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 partner_user 中有记录",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.partner_user.findOne({puid: <puid>, channel_code: '<channelId>'})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查角色分配",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认用户角色数据完整",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.partner_user_role.findOne({user_id: <puid>}) 和 db.partner_role.findOne({role_id: '<roleId>'})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 检查 MDM 渠道数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 mdm_channel 数据同步正常",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "db.mdm_channel.findOne({channel_id: '<channelId>'})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "5. 补录数据恢复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "数据缺失时通过 MDM 同步或手动补录",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "触发 MDM 数据同步，或在对应集合中手动补录缺失记录",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Partner_IMLoginDataFail_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"渠道IM登录前置信息查询失败，puid: %d, channelId: %s, 失败环节: %s(渠道用户/角色/渠道信息/IM映射), 错误: %s, 渠道人员无法登录IM\",\n  \"suggest_msg\": \"1. 渠道用户查询失败: db.partner_user.findOne({puid: <puid>, channel_code: '<channelId>'}); 2. 角色查询失败: db.partner_user_role.findOne({user_id: <puid>}), 确认角色分配正常; 3. 角色名查询失败: db.partner_role.findOne({role_id: '<roleId>'}); 4. 渠道信息查询失败: db.mdm_channel.findOne({channel_id: '<channelId>'}), 确认MDM数据同步正常; 5. IM映射写入失败: 检查im_user表写入权限和MongoDB连接\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[csp_servi",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "CSP登录错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "查询客户",
+  "scenario": "",
+  "error_code": "201016",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道等级错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "查询客户",
+  "scenario": "",
+  "error_code": "101051",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询渠道下客户错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "查询客户",
+  "scenario": "",
+  "error_code": "101053",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询MDM客户错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "邀请注册",
+  "scenario": "邀请注册",
+  "error_code": "101077",
+  "level": "P2",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示，渠道下没有对应的客户",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "在ICARE-客户管理-选择的客户是否有对应的渠道",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "客户与渠道不匹配"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "邀请注册",
+  "scenario": "",
+  "error_code": "101048",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "查询用户错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "邀请注册",
+  "scenario": "",
+  "error_code": "101081",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "正常提示",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "同一企业同一手机号已注册"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "邀请注册",
+  "scenario": "",
+  "error_code": "101055",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "创建新客户错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "邀请注册",
+  "scenario": "",
+  "error_code": "2405",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "生成邀请短链错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "渠道侧",
+  "module": "邀请注册",
+  "function": "邀请注册",
+  "scenario": "",
+  "error_code": "2406",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "发送邀请信息错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "CTI侧",
+  "module": "客户咨询",
+  "function": "IM登录",
+  "scenario": "IM登录",
+  "error_code": "501001",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "依赖ITGW和ICARE",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "1. 确认失败环节",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "根据日志关键字定位具体失败步骤",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "按日志区分是 iCare 数据/注册/加密/Token 哪一步失败",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "2. 检查 iCare 服务状态",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 iCare 接口可用",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查 iCare 服务的 GetUserDataByCode 接口响应状态",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 验证 code 有效性",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "确认传入的 code 在 iCare 中存在",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "在 iCare 系统中查询该 code 对应的用户数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 检查 iCare 用户记录",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认本地 icare_user 集合状态",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.icare_user.findOne({code: '<code>'})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "5. 检查加密配置",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认加密密钥正确",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查环境变量中的加密密钥配置是否完整",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "6. 重试登录",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "上游服务恢复后引导400重新登录",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "400 坐席关闭 Web 页面后重新打开，触发重新登录",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Third_CTILoginDataFail_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"CTI(400) IM登录数据异常，code: %s, 失败环节: %s(iCare用户数据/用户注册/加密/IM映射/Token生成), 错误: %s, 400坐席无法登录IM\",\n  \"suggest_msg\": \"1. iCare用户数据获取失败: 检查iCare服务状态和GetUserDataByCode接口, 确认传入的code有效; 2. iCare返回空: 确认code对应的用户在iCare系统中存在; 3. 用户ID生成失败: 检查generate_unique服务和依赖的ID生成器; 4. 加密失败: 检查加密密钥配置; 5. UpsertIcareUser失败: 检查MongoDB连接和icare_user集合; 6. Token生成失败: 检查JWT密钥配置和token生成逻辑\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[csp_service.go:387] [CspService.CspWebLogin] -> [workOrderApi.GetUserDataByCode]\",\n  \"source\"",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "ICARE获取用户编码错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "CTI侧",
+  "module": "客户咨询",
+  "function": "IM登录",
+  "scenario": "",
+  "error_code": "501002",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "获取ICARE用户错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "CTI侧",
+  "module": "客户咨询",
+  "function": "IM登录",
+  "scenario": "",
+  "error_code": "2401",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "/根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "生成唯一编码错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "CTI侧",
+  "module": "客户咨询",
+  "function": "IM登录",
+  "scenario": "",
+  "error_code": "501003",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "参考故障错误数据库恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误日志确定错误根因进行修复",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "保存ICARE用户错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "CTI侧",
+  "module": "客户咨询",
+  "function": "IM登录",
+  "scenario": "CSP IM登录接口",
+  "error_code": "401007",
+  "level": "P0",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "1. 检查csp-rpc-api , csp-rpc-user, csp-rpc-auth存活",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 Pod 状态和健康检查",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "2. 检查网络连通性",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 csp-rpc-api host 可达",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "curl -v <csp_host>/health 验证连通性",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "3. 分析错误码",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "区分网络错误和业务错误",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "网络错误：检查 DNS/防火墙；业务错误(ErrCode≠",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "：查看 csp-rpc-api 日志",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 检查请求参数",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认传入参数完整",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查日志中的 req 字段，确认 userId、corpCode、productId 非空",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "5. 重试登录",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "csp-rpc-api 恢复后引导用户重试",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "用户退出小程序/页面后重新进入，触发重新登录",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Conversation_CspLoginFail_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"CSP IM登录接口调用失败，登录路径: %s(客户/渠道/400), userId: %d, corpCode: %s, 错误: %s, 该角色无法获取IM Token，IM功能完全不可用\",\n  \"suggest_msg\": \"1. 检查csp-service服务状态(K8s Pod是否Running); 2. 检查csp-service配置的host地址是否可达; 3. 如errCode非零, 检查CSP返回的具体错误码含义(1001为已知可忽略); 4. 检查请求参数完整性(userId/corpCode/productId); 5. 查看csp-service端日志确认失败原因\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[csp.go:146] [csp.CspLogin] -> [HTTP POST csp-service/login]\",\n  \"source\": \"[csp.go:146] [csp.CspLogin]\",\n  \"occur_time\": \"2026-02-26 14:21:22\"\n}",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "CSP登录错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "CTI侧",
+  "module": "客户咨询",
+  "function": "IM登录",
+  "scenario": "",
+  "error_code": "501004",
+  "level": "",
+  "type": "",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "生成WeChat的Token错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "获取版本号",
+  "scenario": "判断是否登录",
+  "error_code": "UNCODED@csdp#3",
+  "level": "P2",
+  "type": "业务错误",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "未登录"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "获取用户帐号信息",
+  "scenario": "能否进行快速登录",
+  "error_code": "902001",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "联系树朝处理，Redis地址：10.6.104.166，重新启动Redis实例",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "参考中间件Redis恢复方案",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Redis访问异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "获取用户帐号信息",
+  "scenario": "",
+  "error_code": "903001",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "联系树朝处理，数据库地址：10.6.104.169，重新启动数据库实例",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "参考中间件Mongodb恢复方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "# 检查MongoDB状态",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "systemctl status mongodb",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "# 检查磁盘空间",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "df -h",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "# 检查内存",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "free -h",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "# 重启MongoDB",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "systemctl restart mongodb",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "联系树朝处理，数据库地址：10.6.104.169",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "数据库不可用 / 数据库访问异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "获取用户帐号信息",
+  "scenario": "",
+  "error_code": "101002",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "代码部署回滚（csdp-wechat）sz3-s-prd集群和sz4-s-zaibei集群",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-ccntgtkm/explorer/apps.deployment",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-vkh8l9vf/explorer/apps.deployment",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "获取帐号逻辑错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "帐号登录/帐号注册",
+  "scenario": "",
+  "error_code": "901001",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "需放通应用服务器的网络联通到https://api.weixin.qq.com",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "S3区服务器地址：10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "，",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "S4区服务器地址：10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "提交工单放通  https://it.atrust.sangfor.com/backstage/reception/hitchNow?ssiid=71274970097c4801b8c9df737636dae2&catalogName=%E7%BD%91%E7%BB%9C%E6%9D%83%E9%99%90%E7%94%B3%E8%AF%B7new ，",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "紧急情况电话联系 黄仲乐或者段雨宏 处理",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "需放通应用服务器的网络联通到 https://api.weixin.qq.com，到服务器上 telnet api.weixin.qq.com 443 检查网络的连通性",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "提交工单放通  https://it.atrust.sangfor.com/backstage/reception/hitchNow?ssiid=71274970097c4801b8c9df737636dae2&catalogName=%E7%BD%91%E7%BB%9C%E6%9D%83%E9%99%90%E7%94%B3%E8%AF%B7new ，紧急情况电话联系 黄仲乐或者段雨宏 处理",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "备用线路IP （？？？），检查备用线路ip是否正常，如果正常，先切换备用线路IP看是否快速恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "具体切换备用线路IP步骤？？？",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "如果是企微本地服务问题，联系 企微客服 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "微信API网络不通"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "帐号登录/帐号注册",
+  "scenario": "",
+  "error_code": "901003",
+  "level": "",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "重启Pod（csdp-wechat）, sz3-s-prd集群和sz4-s-zaibei集群",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "打开如下链接重启Pod",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-ccntgtkm/explorer/apps.deployment/csdp/csdp-wechat#pods",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-vkh8l9vf/explorer/apps.deployment/csdp/csdp-wechat#pods",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "微信Token失效"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "渠道",
+  "function": "受理工单",
+  "scenario": "获取工单处理人",
+  "error_code": "2000001",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "需重新触发PRM到CSDP的处理人同步",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Workorder_PartnerUserEmpty_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"渠道用户查询失败(partner_user为空)，puid: %d, channelId: %s, 失败环节: %s, 错误: %s, 渠道侧所有工单操作被阻断\",\n  \"suggest_msg\": \"1. 检查MongoDB partner_user表中是否存在该puid的记录: db.partner_user.findOne({puid: <puid>, chnl_code: '<channelId>'}); 2. 检查partner_user的del_flag字段是否为0(0=未删除); 3. 检查Redis中partner_user缓存是否异常(key格式: partner_user:<puid>); 4. 如果用户确实不存在，需要在PRM系统重新同步渠道用户数据\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[work_order_partner_service.go:1075] [WorkOrderService.checkWorkOrderBelong] -> [partnerUserRepo.GetPart",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "partner_user 表查询失败或用户数据为空"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "渠道",
+  "function": "受理工单",
+  "scenario": "获取工单数据",
+  "error_code": "4001006",
+  "level": "P1",
+  "type": "数据异常",
+  "recovery_steps": [
+   {
+    "text": "登录ICARE（https://icarenew.sangfor.com）",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "按F12，打开开发者模式，点击系统的工单管理，在开发者窗口中的Network中随便找个请求，authorization就是授权Token",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "修改登录ICARE的TOKEN和工单号后，使用Postman重新触发数据同步",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "curl --location 'https://icarenew.sangfor.com/api/sf-icare-exchange/case/workOrder/syncForManual' \\",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "--header 'Authorization: 登录ICARE的TOKEN' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'simpleToken: <TOKEN>' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'operationID: {{operationID}}' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Content-Type: text/plain' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--data '工单号示例：T2026011600930,T2026011600930'",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "工单数据为空"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "渠道",
+  "function": "录入工时",
+  "scenario": "icare录入工时",
+  "error_code": "UNCODED@csdp#18",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "ICARE操作异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "渠道",
+  "function": "完结工单",
+  "scenario": "创建服务工单",
+  "error_code": "UNCODED@csdp#24",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "根据观测云错误日志的内容，拿到创建的工单号T202602040001，",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "登录ICA RE系统icarenew.sangfor.com/index.html，在CARE系统的工单管理模块，查看否存在工单信息",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "如果存在ICARE工单，需要手动调用ICARE同步程序",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "通过浏览器按F12，按F5刷新页面，选择NetWork,任务链接，headers- cookie拿到ICARE的登录access_token，替换4步的Authorization",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "Postman后者ApiPost手动调用curl --location 'https://icarenew.sangfor.com/api/sf-icare-exchange/case/workOrder/syncForManual' \\",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "--header 'Authorization: Bearer <BEARER_TOKEN>' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'simpleToken: <TOKEN>' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'operationID: {{operationID}}' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Content-Type: text/plain' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--data 'T202602040001'",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "在数据库运维平台（https://itdb.atrust.sangfor.com/sqlquery/）SQL查询模块，通过CSDP数据库执行语句查看工单和服务工单是否创建成功",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "执行语句查询工单：db.getCollection(\"workorder\").find({ \"workOrderCode\": \"T202602040001\" }).limit(",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": ".skip(",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "执行语句查询服务工单：db.getCollection(\"workorder_service\").find({ \"related_workorder\": \"T202602040001\" }).limit(",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "创建失败保存入库的异常需要排查",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "数据库异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "渠道",
+  "function": "完结工单",
+  "scenario": "获取客户名称",
+  "error_code": "UNCODED@csdp#26",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "云图异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "创建工单",
+  "scenario": "获取渠道信息",
+  "error_code": "801009",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "联系MDM贺国峰管理员重新推送数据",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "重启Pod（csdp-task）https://it-k8s.sangfor.com/dashboard/c/c-m-ccntgtkm/explorer/apps.deployment/csdp/csdp-task#pods",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-vkh8l9vf/explorer/apps.deployment/csdp/csdp-task#pods",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "主数据中道数据不存在"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "创建工单",
+  "scenario": "获取客户信息",
+  "error_code": "801008",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "联系MDM贺国峰管理员重新推送数据",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "重启Pod（csdp-task）https://it-k8s.sangfor.com/dashboard/c/c-m-ccntgtkm/explorer/apps.deployment/csdp/csdp-task#pods",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-vkh8l9vf/explorer/apps.deployment/csdp/csdp-task#pods",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "主数据中客户数据不存在"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "创建工单",
+  "scenario": "创建工单",
+  "error_code": "201001\n101007",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "代码部署回滚（csdp-wechat）sz3-s-prd集群和sz4-s-zaibei集群",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-ccntgtkm/explorer/apps.deployment",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "https://it-k8s.sangfor.com/dashboard/c/c-m-vkh8l9vf/explorer/apps.deployment",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "创建工单逻辑错误"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "创建工单",
+  "scenario": "创建工单",
+  "error_code": "4001012",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [],
+  "log_signature": "create work order fail",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "工单列表",
+  "scenario": "数据查询的异常",
+  "error_code": "Workorder_CustomerListFail_003",
+  "level": "P1",
+  "type": "数据异常",
+  "recovery_steps": [
+   {
+    "text": "1. 检查MongoDB状态",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 MongoDB 是否正常",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "观测云 MongoDB 监控面板，查看连接数/慢查询/磁盘空间",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "2. 检查用户数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 users 表是否有该用户",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.users.findOne({user_id: <userId>})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查索引",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 work_order 表索引是否存在",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.work_order.getIndexes() 确认关键字段有索引",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 检查慢查询",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "是否存在慢查询阻塞",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "MongoDB profiler 检查 system.profile 集合",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Workorder_CustomerListFail_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"客户工单列表查询失败，userId: %d, 失败环节: %s, 错误: %s, 客户无法查看工单进展\",\n  \"suggest_msg\": \"1. 检查MongoDB连接状态; 2. 检查users表是否有该userId的记录: db.users.findOne({user_id: <userId>}); 3. 检查work_order表索引状态; 4. 检查是否是MongoDB慢查询导致超时\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[work_order_service.go:136] [WorkOrderService.WorkOrderList] -> [userRepo.GetUserByUserId] / [workOrderRepo.GetWorkOrderList]\",\n  \"source\": \"[work_order_service.go:142] [WorkOrderService.WorkOrderList]\",\n  \"occur_time\": \"2026-02-26 14:21:22\"\n}",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "数据库异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "工单详情",
+  "scenario": "获取工单信息",
+  "error_code": "Workorder_CustomerDetailFail_004",
+  "level": "P1",
+  "type": "数据异常",
+  "recovery_steps": [
+   {
+    "text": "1. 检查工单数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认工单是否存在",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.work_order.findOne({workOrderCode: '<code>'}) 检查 T 单；db.work_order_question.findOne({question_id: '<code>'}) 检查 Q 单",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "2. 检查srv_work_order",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认服务工单是否存在",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "db.srv_work_order.findOne({related_work_order: '<code>'})",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查MongoDB",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认连接正常",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "观测云 MongoDB 监控面板",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "4. 检查用户手机号",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "如果是 getUerPhone 失败",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "db.users.findOne({user_id: <userId>}, {phone: 1}) 确认手机号字段非空",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "5. 检查权限",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "如果是 checkPermissions 失败",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "确认登录用户手机号与工单联系人手机号一致（不一致会返回权限错误）",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Workorder_CustomerDetailFail_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"客户工单详情获取失败，workOrderCode: %s, 失败环节: %s, 错误: %s, 客户无法查看工单进展和处理记录\",\n  \"suggest_msg\": \"1. 检查MongoDB work_order表是否有该workOrderCode的记录: db.work_order.findOne({workOrderCode: '<code>'}); 2. 检查work_order_question表是否有对应Q单: db.work_order_question.findOne({question_id: '<code>'}); 3. 检查srv_work_order表: db.srv_work_order.findOne({related_work_order: '<code>'}); 4. 如果是手机号获取失败，检查users表的phone字段\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[work_order_service.go:1391] [WorkOrderService.WorkOrderDeta",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "一键催单",
+  "scenario": "icare催单",
+  "error_code": "UNCODED@csdp#37",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "ICARE操作异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "紧急报障",
+  "scenario": "icare创建问题单",
+  "error_code": "Workorder_EmergencyCreateFail_005",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "首先查看观测云日志或者群消息，提取出创建工单所需要的数据",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "例如：{\"url\":\"https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/channel/updateFinish?app=CSDP\\u0026time=1770258988\\u0026token=502bd552710232c4f034af7b2845a58b\",\"header\":{\"Authorization\":\"Bearer <BEARER_TOKEN>\"},\"content\":{\"loginPrmUserId\":\"10661735\",\"loginPrmUserName\":\"麦俊峰\",\"loginPrmUserComId\":\"SI045737\",\"workOrderId\":\"T2026011601448\",\"workOrderCode\":\"T2026011601448\",\"remark\":\"\",\"syncCustomerDetail\":\"1.10集群和15集群存储资源紧张，将已关机的1TB以上的虚拟机迁移到236集群上\"},\"error\":\"return data code is not ok! 请录入工时后才能完结工单\"}",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "根据错误的提示，需改错误的内容，修改异常数据后，通过Postman或者Apipost重新触发",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "curl --request POST \\",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "--url 'https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/save?app=CSDP%2Fu0026time%3D1770258988%2Fu0026token%3D502bd552710232c4f034af7b2845a58b' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Accept: */*' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Accept-Encoding: gzip, deflate, br' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Authorization: Bearer <BEARER_TOKEN>' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Connection: keep-alive' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'Content-Type: application/json' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--header 'User-Agent: PostmanRuntime-ApipostRuntime/1.1.0' \\",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "--data '{",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"loginPrmUserId\": \"10661735\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"loginPrmUserName\": \"麦俊峰\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"loginPrmUserComId\": \"SI045737\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"workOrderId\": \"T2026011601448\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"workOrderCode\": \"T2026011601448\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"remark\": \"\",",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "\"syncCustomerDetail\": \"1.10集群和15集群存储资源紧张，将已关机的1TB以上的虚拟机迁移到236集群上\"",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "}'",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Workorder_EmergencyCreateFail_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"紧急保障创建问题单失败，ccode: %d, username: %s, emergencyLevel: %d, contactPhone: %s, 失败环节: %s, 错误: %s, 客户在紧急情况下无法获得原厂支持\",\n  \"suggest_msg\": \"1. 检查iCare系统服务状态(icare_host配置的地址是否可达); 2. 检查csdp-wechat Pod网络是否可访问iCare API; 3. 检查紧急报障的Q单创建参数是否完整(QuestionType=2, EmergencyLevel等); 4. 检查iCare侧日志确认具体失败原因; 5. 注意: 紧急保障有每日次数限制(默认10次/天)，创建失败会浪费额度\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[work_order_service.go:1275] [WorkOrderService.WorkOrderEmergency] -> [createWorkOrderQuestion] -> [workOrderAPI.ICareC",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "服务升级",
+  "scenario": "验证升级Token是否存在",
+  "error_code": "UNCODED@csdp#45",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "数据丢失"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "服务升级",
+  "scenario": "icare创建问题单",
+  "error_code": "Workorder_UpgradeServiceFail_006",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "1. 确认工单状态",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "判断走哪条升级路径",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "db.srv_work_order.findOne({related_work_order: '<code>'}, {status: 1}) 确认是未受理还是已受理",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "2. 检查是否已升级",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认工单是否已经升级过",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查 related_upgrade_workorder 字段是否非空，非空表示已升级，不能重复升级",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查iCare服务状态",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 iCare 系统是否正常",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查 icare_host 和 workorder_up_origin_path 配置",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 未受理路径-检查Q单参数",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 Q 单创建参数完整",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "同 P0-3 紧急保障的排查方式，检查 QuestionType=4（转人工升级原厂）",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "5. 已受理路径-检查升级参数",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认升级原厂的参数正确",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查 HandlerId、WorkOrderCode、MainProductLine 等必填字段",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Workorder_UpgradeServiceFail_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"服务升级失败，workOrderCode: %s, 工单状态: %s(未受理/已受理), 升级路径: %s(Q单创建/T单升级原厂), 错误: %s, 客户无法将工单升级到原厂处理\",\n  \"suggest_msg\": \"1. 确认工单当前状态(未受理走Q单路径, 已受理走升级原厂路径); 2. 检查iCare系统服务状态; 3. 未受理路径: 检查ICareCreateWorkOrderQuestion参数(QuestionType=4); 4. 已受理路径: 检查ICareWorkOrderUpOrigin参数(WorkOrderCode, HandlerId, MainProductLine); 5. 检查工单是否已经升级过(RelatedUpgradeWorkOrder非空则不能重复升级)\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[work_order_service.go:2937] [WorkOrderService.WorkOrderUpgradeService] -> [WorkOrderServ",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "ICARE操作异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-wechat",
+  "module": "客户",
+  "function": "未完结工单",
+  "scenario": "查询数据库",
+  "error_code": "UNCODED@csdp#50",
+  "level": "P1",
+  "type": "数据异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "数据库异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-task",
+  "module": "客户资产数据",
+  "function": "保存客户资产数据",
+  "scenario": "保存到数据库",
+  "error_code": "UNCODED@csdp#54",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "数据库异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-task",
+  "module": "同步工单",
+  "function": "保存工单",
+  "scenario": "保存到数据库",
+  "error_code": "UNCODED@csdp#60",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "数据库异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-task",
+  "module": "同步工单日志",
+  "function": "保存工单日志",
+  "scenario": "保存到数据库",
+  "error_code": "UNCODED@csdp#63",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "数据库异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-task",
+  "module": "同步工单日志",
+  "function": "更改服务工单",
+  "scenario": "完结工单",
+  "error_code": "UNCODED@csdp#64",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "通过观测云拿到错误的编码， srvWorkOrderId T2026020400003",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "在数据库运维平台（https://itdb.atrust.sangfor.com/sqlquery/）SQL查询模块，通过CSDP数据库查询工单，",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "查询服务工单db.getCollection(\"workorder_service\").find({ \"related_workorder\": \"T2026020400003\" }).limit(",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": ".skip(",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "修改服务工单更新语句中的状态status，sub_status",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "更新语句db.workorder_service.updateMany(",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "{",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "// 匹配条件：related_workorder在待更新列表中",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "related_workorder: { $in: “T2026020400003” }",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "},",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "// 更新操作：设置status=2，sub_status=5",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "$set: {",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "status: 2,",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "sub_status: 5",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "}",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "// 可选：如果需要更新不存在的字段，设置upsert=false（默认）",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "upsert: false",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": ");",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "重新执行查询语句查看状态是否更新成功",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "状态映射关系",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "工单完结status=2，sub_status=5",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "工单受理status=1，sub_status=2",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认完结status=1，sub_status=4",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认升级status=1，sub_status=3",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "数据库异常\n业务逻辑异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "csdp-task",
+  "module": "同步问题工单",
+  "function": "保存问题工单",
+  "scenario": "保存到数据库",
+  "error_code": "UNCODED@csdp#71",
+  "level": "P1",
+  "type": "业务错误",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "数据库异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "客户IM",
+  "module": "会话",
+  "function": "websocket连接建立失败",
+  "scenario": "WS连接数超限",
+  "error_code": "IM5003",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "1. 水平扩容Pod",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "增加 csp-msggateway 实例数",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "Rancher → csdp 命名空间 → csp-msggateway → 调整 replicas 数量。",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "2. 连接泄漏排查",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "对比在线用户数和连接数",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "连接数远大于用户数 → 泄漏（同一用户多连接未关闭）",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "3. 异常客户端排查",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "聚合分析来源 IP 和 userID",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "日志中聚合 remoteAddr，排查 Bot/爬虫异常重连",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "4. 调整配置",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果单 Pod 连接上限不合理",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "调整 maxClients 配置（当前默认",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "，修改配置后重启",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Network_WSConnOverLimit_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"WebSocket连接数达到上限，当前连接数: %d, 最大限制: %d (maxClients=%d), 新连接被拒绝，用户ID: %s, 平台: %s, 来源IP: %s\",\n  \"suggest_msg\": \"1. 登录Rancher平台，查看csp-msggateway各Pod的连接数指标; 2. 确认是否存在连接泄漏(连接数远大于在线用户数); 3. 通过Rancher水平扩容csp-msggateway实例数; 4. 检查是否有异常客户端频繁重连(日志中来源IP聚合)\",\n  \"span_id\": \"uuid\",\n  \"trace_id\": \"uuid\",\n  \"stack_trace\": \"\",\n  \"source\": \"[ws_server.go:435] [WsServer.wsHandler]\",\n  \"occur_time\": \"2026-02-26 14:21:22\"\n}",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "业务逻辑异常"
+ },
+ {
+  "system": "CSDP",
+  "service": "客户IM",
+  "module": "会话",
+  "function": "会话受理",
+  "scenario": "坐席接单核心操作失败",
+  "error_code": "201011",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "1. 检查CSS服务",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 csp-rpc-css Pod 正常",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "Rancher → csdp → csp-rpc-css → Pod 状态",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "2. 检查MongoDB",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 MongoDB 连接正常",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "观测云 MongoDB 监控面板，查看连接数/慢查询",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查Redis",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 Redis 集群正常（分布式锁依赖）",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "观测云 Redis 监控面板，查看连接数/内存使用",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 查看链路",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "通过 trace_id 查看完整调用链路",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "观测云链路追踪，定位具体失败环节",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Conversation_AcceptFailed_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"坐席接单核心操作失败，srvConversationID: %s, handlerExternalID: %s, staffGroup: %s/%s, 失败环节: %s, 错误: %s\",\n  \"suggest_msg\": \"1. 登录Rancher检查csp-rpc-css Pod是否正常; 2. 检查MongoDB连接池(观测云MongoDB监控面板); 3. 检查Redis集群状态(分布式锁依赖); 4. 观测云搜索trace_id关联完整链路\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[client.go:724] [srvConversationClient.Accept] -> [acceptTask]\",\n  \"source\": \"[client.go:696] [srvConversationClient.Accept]\",\n  \"occur_time\": \"2026-02-26 14:21:22\"\n}",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "MongoDB查询失败/Redis分布式锁不可用/FSM状态写入失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "客户IM",
+  "module": "会话",
+  "function": "会话受理",
+  "scenario": "坐席已接单但加群失败",
+  "error_code": "UNCODED@csdp#80",
+  "level": "P0",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "1. 检查Group服务",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 Group gRPC 服务正常，Rancher → csdp → 检查 Group 相关 Pod。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "2. 确认处理人",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查处理人是否在 IM 系统注册，MongoDB 查询 srv_user 表。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 恢复服务",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "渠道对该会话执行转派，转派给另一坐席或转派给同一人均可。转派会重新触发 afterReassignCb → addStaffIntoSrvConversation，等效于重新执行加群，无需手动加群或调 API",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "4. 排查队列溢出",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "检查内存队列是否满，搜索日志关键字 push after accept srvconversation callback failed",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Conversation_AcceptJoinGroupFailed_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"坐席已接单但加群失败，srvConversationID: %s, handlerExternalID: %s, groupID: %s, 失败环节: %s, 错误: %s\",\n  \"suggest_msg\": \"1. 登录Rancher检查csp-rpc-group Pod是否正常(InviteUserToGroup依赖); 2. 检查处理人是否已在IM系统注册; 3. 搜索日志'push after accept srvconversation callback failed'判断是否队列满; 4. 恢复服务：由渠道在管理后台对该会话执行转派（转派给另一坐席或转派给同一人），转派会重新触发加群回调(addStaffIntoSrvConversation)，无需手动加群\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[srvconversationcallback.go:408] -> [addStaffIntoSrvConversation]\",\n  \"source\": \"[srvconversatio",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "坐席加群失败导致无法收发消息"
+ },
+ {
+  "system": "CSDP",
+  "service": "客户IM",
+  "module": "消息处理链路",
+  "function": "发送消息",
+  "scenario": "Kafka/MQ不可用导致消息发送失败",
+  "error_code": "IM1010",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "1. 检查Kafka集群确认 Kafka Broker 是否正常，Rancher → csdp 命名空间 → Kafka Pod 状态，观测云 Kafka 监控面板",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "2. 检查网络，csp-rpc-msg → Kafka 网络是否通，Pod 内 telnet kafka-host:9092 确认连通性。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查Kafka磁盘，Broker 磁盘满会拒绝写入，kafka-log-dirs.sh 或观测云磁盘监控，清理过期 segment 或扩容磁盘。",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Middleware_MsgSendMQFailed_001\",\n  \"error_level\": \"FATAL\",\n  \"error_msg\": \"消息发送失败(MQ Producer异常)，MsgToMQ写入toRedis topic失败，sessionType: %d, conversationKey: %s, 错误: %s，所有消息发送将持续失败直到MQ恢复\",\n  \"suggest_msg\": \"1. 登录Rancher检查Kafka集群Pod状态(csdp命名空间); 2. 检查Kafka Broker日志确认异常原因(磁盘满/网络分区/Leader选举); 3. 检查csp-rpc-msg Pod日志搜索SendMessage相关错误; 4. Kafka恢复后观察消息发送是否自动恢复\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[send.go:77] [msgServer.sendMsgGroupChat] -> [MsgDatabase.MsgToMQ] -> [producer.SendMessage]\",\n  \"source\": \"[send.go:78] [msgServer.sendMsgGroupChat]\",\n  \"occur_time\"",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "Kafka/MQ Producer SendMessage 失败，csp-rpc-msg 无法将消息写入 toRedis topic"
+ },
+ {
+  "system": "CSDP",
+  "service": "客户IM",
+  "module": "消息处理链路",
+  "function": "消息持久化到redis",
+  "scenario": "Redis不可用导致消息静默丢失",
+  "error_code": "IM2002",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "1. 检查Redis集群",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 Redis 集群是否正常，联系托管云查看Redis集群状态。",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "2. 检查Redis内存",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认内存是否接近 maxmemory",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "redis-cli INFO memory，used_memory 接近 maxmemory 时 Redis 会拒绝写入",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "3. 确认影响范围",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "搜索 msgtransfer 日志确认哪些会话受影响",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "csp-msgtransfer Pod 日志搜索 batch data insert to redis err，聚合 conversationID",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "4. 检查MQ消费位点",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认是否有消息被消费但未成功处理",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查 toRedis topic consumer group 的 lag/offset，确认 backlog 数量",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "5. 消息重放",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果消息已被 ACK 但未写入 Redis，需要重置消费位点",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "重置 toRedis topic consumer group offset 到故障前的时间点重新消费",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "6. 根因修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "修复 Redis 异常后确认恢复",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "Redis 恢复后观察 msgtransfer 日志是否恢复正常消费",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Middleware_MsgCacheFailed_001\",\n  \"error_level\": \"FATAL\",\n  \"error_msg\": \"消息缓存写入失败(Redis异常)，BatchInsertChat2Cache失败，conversationID: %s, 消息数量: %d, 错误: %s，后续MongoDB持久化和Push推送全部跳过，消息静默丢失\",\n  \"suggest_msg\": \"1. 登录Rancher检查Redis集群Pod状态(csdp命名空间); 2. 检查Redis内存使用率(接近maxmemory会拒绝写入); 3. 检查csp-msgtransfer Pod日志搜索'batch data insert to redis err'确认影响范围; 4. Redis恢复后需检查MQ消费位点，确认是否有消息被跳过需要重放\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[online_history_msg_handler.go:301] [OnlineHistoryRedisConsumerHandler.handleMsg] -> [BatchInsertChat2Cache]\",\n  \"source\": \"[online_history",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "BatchInsertChat2Cache 写入 Redis 失败，整个消息处理链中止"
+ },
+ {
+  "system": "CSDP",
+  "service": "客户IM",
+  "module": "消息处理链路",
+  "function": "消息持久化到数据库",
+  "scenario": "MongoDB不可用导致消息无法持久化",
+  "error_code": "IM3002",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "1. 检查MongoDB集群",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 MongoDB 是否正常，联系托管云查看mongodb集群",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "2. 检查MongoDB磁盘",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "磁盘满会导致写入失败",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "db.stats() 查看数据量，检查 PVC 使用率",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查MongoDB连接数",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "连接池耗尽会导致写入超时",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "db.serverStatus().connections 查看当前连接数是否接近上限",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 确认影响范围",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "搜索日志确认影响",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "csp-msgtransfer Pod 日志搜索 single data insert to mongo err，聚合 conversationID",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "5. 检查toMongo积压",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "MongoDB 恢复后确认积压消费",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查 toMongo topic consumer group lag，确认积压消息是否在正常消费",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "6. Redis缓存保护",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "MongoDB 故障期间确保 Redis 缓存不被淘汰",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "确认 Redis maxmemory-policy 配置，必要时临时调高 maxmemory 防止消息缓存被 LRU 淘汰",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "7. 根因修复",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "修复 MongoDB 异常后确认恢复",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "MongoDB 恢复后观察 msgtransfer Mongo Consumer 日志是否恢复正常写入",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Middleware_MsgPersistDBFailed_001\",\n  \"error_level\": \"FATAL\",\n  \"error_msg\": \"消息MongoDB持久化失败，conversationID: %s, 消息数量: %d, lastSeq: %d, 错误: %s，消息仅存在于Redis缓存中，Redis过期或重启后将永久丢失\",\n  \"suggest_msg\": \"1. 登录Rancher检查MongoDB集群Pod状态(csdp命名空间); 2. 检查MongoDB磁盘空间和连接数; 3. 检查csp-msgtransfer Pod日志搜索'single data insert to mongo err'确认影响范围; 4. MongoDB恢复后检查toMongo topic是否有积压消息等待消费\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[online_msg_to_mongo_handler.go:51] [OnlineHistoryMongoConsumerHandler.HandleChatWs2Mongo] -> [BatchInsertChat2DB]\",\n  \"source\": \"[online_msg_to_mongo_han",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "BatchInsertChat2DB 写入 MongoDB 失败，或 MsgToMongoMQ 发送 toMongo topic 失败"
+ },
+ {
+  "system": "CSDP",
+  "service": "客户IM",
+  "module": "CTI排队系统",
+  "function": "CTI管家/一线调度",
+  "scenario": "Pulsar投递失败导致调度阻塞",
+  "error_code": "101010\n101014",
+  "level": "P0",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "1. 检查Pulsar集群，确认 Pulsar Broker 和 Proxy 是否正常，Rancher → csdp 命名空间 → pulsar-broker / pulsar-proxy Pod 状态。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "2. 检查Producer是否正常连接，csp-rpc-css Pod 日志搜索 `pulsar producer` 相关错误。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 检查pulsar BookKeeper 磁盘是否满。",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "4. 确认任务不丢，投递失败的任务会自动重入队，检查 Redis 队列长度是否异常增长（持续投递失败的信号）。",
+    "action_type": "auto_readonly"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Cti_DispatchPulsarFailed_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"CTI调度器Pulsar投递失败，taskID: %s, managerUnionID: %s, managerName: %s, topic: %s, 错误: %s, 任务已重入队等待下次调度\",\n  \"suggest_msg\": \"1. 登录Rancher检查Pulsar集群Pod状态(pulsar-broker/pulsar-proxy); 2. 检查Pulsar Topic(persistent://csp/cti/cti_manager)是否正常; 3. 检查csp-rpc-css Pod日志是否有Producer断连告警; 4. 如果持续失败，检查Pulsar磁盘空间和BookKeeper状态\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[cti_manager_dispatcher.go:296] [CTIManagerDispatcher.tick] -> [publishToPulsar]\",\n  \"source\": \"[cti_manager_dispatcher.go:296] [CTIManagerD",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": "Pulsar Producer发送失败，任务反复重入队"
+ },
+ {
+  "system": "CSDP",
+  "service": "客户IM",
+  "module": "数据层",
+  "function": "内存队列",
+  "scenario": "内存队列溢出",
+  "error_code": "UNCODED@csdp#92",
+  "level": "P0",
+  "type": "业务错误",
+  "recovery_steps": [
+   {
+    "text": "1. 检查Pod资源，水平扩容",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "csp-rpc-css Pod 是否 CPU/内存过高",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "Rancher → csdp 命名空间 → csp-rpc-css → 查看 Pod 资源指标，如果单 Pod 无法承载",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "Rancher → csp-rpc-css → 增加 replicas",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "2. 检查下游服务",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "Group/Msg 服务是否正常",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果下游不可用，Worker goroutine 阻塞在 gRPC 调用，导致 channel 堆积",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "3. 调大队列配置",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "增大 bufferSize 和 workerCount",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "代码中修改 NewMemoryQueue(workerCount, bufferSize) 的初始化参数，增大缓冲区",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "4. 转派补偿",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "渠道对受影响的会话重新执行一次转派操作",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "{\n  \"error_code\": \"Data_MemQueueOverflow_001\",\n  \"error_level\": \"ERROR\",\n  \"error_msg\": \"内存队列溢出(MemoryQueue.Push返回ErrFull)，回调任务被丢弃，回调类型: %s, srvConversationID: %s, 队列bufferSize: %d, pushWait超时: 3s\",\n  \"suggest_msg\": \"1. 登录Rancher检查csp-rpc-css Pod的CPU/内存使用率，高负载会导致Worker处理变慢; 2. 检查是否有下游服务(Group/Msg/Partner)不可用导致回调执行卡住; 3. 评估是否需要调大MemoryQueue的bufferSize和workerCount配置; 4. 对受影响的会话执行转派操作(转派会重新触发afterReassignCb回调，等效于重执行丢失的加群/通知)\",\n  \"span_id\": \"uuid\", \"trace_id\": \"uuid\",\n  \"stack_trace\": \"[queue.go:73] [MemoryQueue.Push] -> [timer.C timeout]\",\n  \"source\": \"[srvconversationcallback.go:490] [afterAccep",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "MemoryQueue channel 缓冲区满，Push 等待 3 秒超时"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "访问系统",
+  "scenario": "域名拨测",
+  "error_code": "UNCODED@csdp#95",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "联系树朝处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": "网络访问超时"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "访问系统",
+  "scenario": "cdn拨测",
+  "error_code": "UNCODED@csdp#96",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "网络访问超时"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "访问系统",
+  "scenario": "apisix拨测",
+  "error_code": "UNCODED@csdp#97",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "网络访问超时"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "IM API 网关入口",
+  "scenario": "csp-api服务拨测",
+  "error_code": "UNCODED@csdp#100",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "1. 确认 Pod 状态",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "Rancher 查看 Pod 是否 Running",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "Rancher → csdp 命名空间 → 对应 Workload → Pod 状态",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "2. 查看 Pod 事件",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "排查异常原因",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "Pod 详情 → Events，查看 OOMKilled / CrashLoopBackOff / FailedScheduling",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "3. 查看 Pod 日志",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "排查启动失败原因",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "Rancher → Pod → Logs，搜索 panic / error / fatal",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "4. 检查资源配额",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "确认 CPU/内存是否充足",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "检查 Pod 的 resources.limits/requests 配置",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "5. 重启恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "偶发异常时重启",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "Rancher → Pod → Delete（K8s 自动拉起新 Pod）",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "6. 水平扩容",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "负载过高时",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "调整 Deployment replicas 数量",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod CrashLoopBackOff / OOMKilled"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "Token 验证与鉴权",
+  "scenario": "csp-rpc-auth服务拨测",
+  "error_code": "UNCODED@csdp#101",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod 不可用"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "客服会话管理（CTI 排队、受理、转派等）",
+  "scenario": "csp-rpc-css服务拨测",
+  "error_code": "UNCODED@csdp#102",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod 不可用"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "消息格式处理",
+  "scenario": "csp-rpc-msg服务拨测",
+  "error_code": "UNCODED@csdp#103",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod 不可用"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "消息持久化与转存",
+  "scenario": "csp-msgtransfer服务拨测",
+  "error_code": "UNCODED@csdp#104",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod 不可用"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "WebSocket 网关",
+  "scenario": "csp-msggateway服务拨测",
+  "error_code": "UNCODED@csdp#105",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod 不可用"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "会话列表与会话管理",
+  "scenario": "csp-rpc-conversation服务拨测",
+  "error_code": "UNCODED@csdp#106",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod 不可用"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "群组管理（建群、加人、踢人）",
+  "scenario": "csp-rpc-group服务拨测",
+  "error_code": "UNCODED@csdp#107",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod 不可用"
+ },
+ {
+  "system": "CSDP",
+  "service": "全链路服务拨测",
+  "module": "全链路",
+  "function": "用户信息管理",
+  "scenario": "csp-rpc-user服务拨测",
+  "error_code": "UNCODED@csdp#108",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": false,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": "Pod 不可用"
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "诸葛小T",
+  "function": "......",
+  "scenario": "接口是否正常",
+  "error_code": "UNCODED@csdp#110",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "需放通应用服务器的网络联通到 https://zhugeai.sangfor.com.cn，到服务器上 telnet zhugeai.sangfor.com.cn 443 检查网络的连通性",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "S3区服务器地址：10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "，",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "S4区服务器地址：10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "提交工单放通  https://it.atrust.sangfor.com/backstage/reception/hitchNow?ssiid=71274970097c4801b8c9df737636dae2&catalogName=%E7%BD%91%E7%BB%9C%E6%9D%83%E9%99%90%E7%94%B3%E8%AF%B7new ，紧急情况电话联系 黄仲乐或者段雨宏 处理",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "备用线路IP （？？？），检查备用线路ip是否正常，如果正常，先切换备用线路IP看是否快速恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "具体切换备用线路IP步骤？？？",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "如果是诸葛小T本地服务问题，陈健行(",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "处理",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "客服数字化平台-诸葛小T-访问异常",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "企信宝",
+  "function": "......",
+  "scenario": "接口是否正常",
+  "error_code": "101034\n101040",
+  "level": "P1",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "需放通应用服务器的网络联通到 https://api.qixin.com，到服务器上 telnet api.qixin.com 443 检查网络的连通性",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "S3区服务器地址：10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "，",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "S4区服务器地址：10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "提交工单放通  https://it.atrust.sangfor.com/backstage/reception/hitchNow?ssiid=71274970097c4801b8c9df737636dae2&catalogName=%E7%BD%91%E7%BB%9C%E6%9D%83%E9%99%90%E7%94%B3%E8%AF%B7new ，紧急情况电话联系 黄仲乐或者段雨宏 处理",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "备用线路IP （？？？），检查备用线路ip是否正常，如果正常，先切换备用线路IP看是否快速恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "具体切换备用线路IP步骤？？？",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "如果是企信宝本地服务问题，联系 企微客服 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "客服数字化平台-三方企信宝-访问异常",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "接口是否正常",
+  "error_code": "904001",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "需放通应用服务器的网络联通到 https://it-gw.sangfor.com，到服务器上 telnet it-gw.sangfor.com 443 检查网络的连通性",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "S3区服务器地址：10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "，",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "S4区服务器地址：10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "提交工单放通  https://it.atrust.sangfor.com/backstage/reception/hitchNow?ssiid=71274970097c4801b8c9df737636dae2&catalogName=%E7%BD%91%E7%BB%9C%E6%9D%83%E9%99%90%E7%94%B3%E8%AF%B7new ，紧急情况电话联系 黄仲乐或者段雨宏 处理",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "备用线路IP （？？？），检查备用线路ip是否正常，如果正常，先切换备用线路IP看是否快速恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "具体切换备用线路IP步骤？？？",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "如果是IT-GW本地服务问题，联系 雷树朝(",
+    "action_type": "human_contact"
+   },
+   {
+    "text": "处理",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "客服数字化平台-三方ITGW-访问异常",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "",
+  "error_code": "904003",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "根据返回的错误码，确定解决方案",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "目前已知：403时，下掉鉴权组件",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "",
+  "error_code": "904004",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "获取不到IT的Token，重新启动POD",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "",
+  "error_code": "904005",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "ITGW启动失败，需要重新启动POD",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "",
+  "error_code": "904006",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "ITGW获取Token失败，需要重新启动POD",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": true
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "",
+  "error_code": "904007",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "ITGW获取Token失败，需要咨询ITGW",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "",
+  "error_code": "904008",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "ITGW获取的数据无效",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "",
+  "error_code": "904009",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "ITGW请求失败",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "三方",
+  "module": "IT- GW",
+  "function": "......",
+  "scenario": "",
+  "error_code": "904010",
+  "level": "",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "ITGW刷新Token失败",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": true,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "minio",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#128",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "登录服务器 minio 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.161 执行重启操作",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "docker restart minio",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "kafka",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#129",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "登录服务器 kafka 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.152 执行重启操作",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "#停止",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kill -9  服务的pid",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "#启动",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "nohup /data/local/kafka-3.5.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "bin/zookeeper-server-start.sh /data/local/kafka-3.5.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "config/zookeeper.properties >/dev/null 2>&1 &",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "bin/kafka-server-start.sh /data/local/kafka-3.5.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "config/server.properties >/dev/null 2>&1 &",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "etcd",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#130",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "登录服务器 etcd 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.149 执行重启操作",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "service etcd restart",
+    "action_type": "manual_write"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "pulsar",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#131",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "登录服务器 pulsar 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.143 执行重启操作",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "#停止",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kill -9  服务的pid",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "#启动",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "cd  /data/local/apache-pulsar-4.0.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "bin  && /data/local/apache-pulsar-4.0.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "bin/pulsar-daemon  start zookeeper",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "bin/pulsar-daemon  start bookie",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "bin/pulsar-daemon start broker",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "Redis",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#132",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "登录服务器 redis 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.155 执行重启操作",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "#停止",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kill -9  服务的pid",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "#启动",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "sh  /data/local/redis_cluster/start_redis_cluster.sh",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "wechat-redis-dmp",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#133",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "wechat-redis-dmp 10.6.104.166 数据库联系托管云DBA（杨小宇、邓梓龙）处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "CSP-mongodb-dmp",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#134",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "CSP-mongodb-dmp 10.6.104.168 数据库联系托管云DBA（杨小宇、邓梓龙）处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "wechat-mongodb-dmp",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#135",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "wechat-mongodb-dmp 10.6.104.169 数据库联系托管云DBA（杨小宇、邓梓龙）处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "中间件",
+  "module": "MQ",
+  "function": "服务状态异常",
+  "scenario": "服务状态异常",
+  "error_code": "UNCODED@csdp#140",
+  "level": "P0",
+  "type": "",
+  "recovery_steps": [
+   {
+    "text": "IT-MQ 200.200.26.124 200.200.26.125 200.200.26.126",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "#停止",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kill -9  服务的pid",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "#启动",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "sh /data/local/rabbitmq_server-3.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "rabbitmq_start.sh",
+    "action_type": "manual_unknown"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "服务器",
+  "module": "服务器",
+  "function": "服务器性能",
+  "scenario": "运行状态",
+  "error_code": "UNCODED@csdp#155",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "堡垒机尝试登录服务器是否正常",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node 10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.32",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node-灾备 10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.34",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "minio 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.161",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kafka 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.152",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "redis 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.155",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "etcd 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.149",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "pulsar 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.143",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-redis-dmp 10.6.104.166",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "CSP-mongodb-dmp 10.6.104.168",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-mongodb-dmp 10.6.104.169",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "服务器不正常，登录云平台 https://172.28.0.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "login 查看虚拟机状态，可以尝试重启服务器是否恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "若重启服务器不能恢复，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "服务器",
+  "module": "服务器",
+  "function": "服务器性能",
+  "scenario": "CPU",
+  "error_code": "UNCODED@csdp#156",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "堡垒机尝试登录服务器是否正常",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node 10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.32",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node-灾备 10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.34",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "minio 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.161",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kafka 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.152",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "redis 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.155",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "etcd 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.149",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "pulsar 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.143",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-redis-dmp 10.6.104.166",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "CSP-mongodb-dmp 10.6.104.168",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-mongodb-dmp 10.6.104.169",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "查看占用CPU的TOP3进程，确认进程是否可以重启或者停止，然后进行重启操作先恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "如果登录不上服务器，登录云平台 https://172.28.0.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "login 查看虚拟机状态，可以尝试重启服务器是否恢复，若重启服务器不能恢复，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "服务器",
+  "module": "服务器",
+  "function": "服务器性能",
+  "scenario": "内存",
+  "error_code": "UNCODED@csdp#157",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "堡垒机尝试登录服务器是否正常",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node 10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.32",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node-灾备 10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.34",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "minio 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.161",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kafka 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.152",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "redis 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.155",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "etcd 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.149",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "pulsar 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.143",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-redis-dmp 10.6.104.166",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "CSP-mongodb-dmp 10.6.104.168",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-mongodb-dmp 10.6.104.169",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "查看占用内存的TOP3进程，确认进程是否可以重启或者停止，然后进行重启操作先恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "如果登录不上服务器，登录云平台 https://172.28.0.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "login 查看虚拟机状态，可以尝试重启服务器是否恢复，若重启服务器不能恢复，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "服务器",
+  "module": "服务器",
+  "function": "服务器性能",
+  "scenario": "IO",
+  "error_code": "UNCODED@csdp#158",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "堡垒机尝试登录服务器是否正常",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node 10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.32",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node-灾备 10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.34",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "minio 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.161",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kafka 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.152",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "redis 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.155",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "etcd 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.149",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "pulsar 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.143",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-redis-dmp 10.6.104.166",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "CSP-mongodb-dmp 10.6.104.168",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-mongodb-dmp 10.6.104.169",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "查看占用IO的TOP3进程，确认进程是否可以重启或者停止，然后进行重启操作先恢复",
+    "action_type": "manual_write"
+   },
+   {
+    "text": "如果登录不上服务器，登录云平台 https://172.28.0.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "login 查看虚拟机状态，可以尝试重启服务器是否恢复，若重启服务器不能恢复，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "服务器",
+  "module": "服务器",
+  "function": "服务器性能",
+  "scenario": "磁盘",
+  "error_code": "UNCODED@csdp#159",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "堡垒机尝试登录服务器，查看占用磁盘空间文件是否可以清理释放空间",
+    "action_type": "auto_readonly"
+   },
+   {
+    "text": "k8s-node 10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.89.32",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "k8s-node-灾备 10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.56.8.34",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "minio 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.161",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "kafka 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.152",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "redis 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.155",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "etcd 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.149",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "pulsar 10.6.104.",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "10.6.104.143",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-redis-dmp 10.6.104.166",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "CSP-mongodb-dmp 10.6.104.168",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "wechat-mongodb-dmp 10.6.104.169",
+    "action_type": "manual_unknown"
+   },
+   {
+    "text": "如果不能清理磁盘空间，联系 雷树朝、谢海天 对响应的磁盘进行扩容，扩容磁盘后并进行扩容分区",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": false,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "宿主机",
+  "function": "服务器性能",
+  "scenario": "运行状态",
+  "error_code": "UNCODED@csdp#160",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "查询虚拟机所在的宿主机http://iaas-cloudservice.sangfor.com/html/vms/ip_query.html，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "宿主机",
+  "function": "服务器性能",
+  "scenario": "CPU",
+  "error_code": "UNCODED@csdp#161",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "查询虚拟机所在的宿主机http://iaas-cloudservice.sangfor.com/html/vms/ip_query.html，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "宿主机",
+  "function": "服务器性能",
+  "scenario": "内存",
+  "error_code": "UNCODED@csdp#162",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "查询虚拟机所在的宿主机http://iaas-cloudservice.sangfor.com/html/vms/ip_query.html，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "宿主机",
+  "function": "服务器性能",
+  "scenario": "IO",
+  "error_code": "UNCODED@csdp#163",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "查询虚拟机所在的宿主机http://iaas-cloudservice.sangfor.com/html/vms/ip_query.html，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "宿主机",
+  "function": "服务器性能",
+  "scenario": "磁盘",
+  "error_code": "UNCODED@csdp#164",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "查询虚拟机所在的宿主机http://iaas-cloudservice.sangfor.com/html/vms/ip_query.html，联系 谢海天、潘峻玥、古彬柯 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "网络质量",
+  "function": "网络性能",
+  "scenario": "网络中断",
+  "error_code": "UNCODED@csdp#165",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "联系 黄仲乐、段雨宏、谢海天 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "网络质量",
+  "function": "网络性能",
+  "scenario": "带宽",
+  "error_code": "UNCODED@csdp#166",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "联系 黄仲乐、段雨宏、谢海天 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "网络质量",
+  "function": "网络性能",
+  "scenario": "丢包",
+  "error_code": "UNCODED@csdp#167",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "联系 黄仲乐、段雨宏、谢海天 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ },
+ {
+  "system": "CSDP",
+  "service": "基础设施",
+  "module": "网络质量",
+  "function": "网络性能",
+  "scenario": "时延",
+  "error_code": "UNCODED@csdp#168",
+  "level": "P0",
+  "type": "依赖异常",
+  "recovery_steps": [
+   {
+    "text": "联系 黄仲乐、段雨宏、谢海天 处理",
+    "action_type": "human_contact"
+   }
+  ],
+  "log_signature": "",
+  "evidence_dql": [],
+  "anomaly_criteria": null,
+  "owner_team": null,
+  "origin": "seed",
+  "status": "candidate",
+  "completeness": {
+   "has_code": false,
+   "has_recovery": true,
+   "has_evidence_dql": false,
+   "has_anomaly_criteria": false,
+   "contact_only": true,
+   "automatable_candidate": false
+  },
+  "cause": ""
+ }
+]

@@ -1,0 +1,437 @@
+<title>智能排障 · 值班驾驶舱 · 版式 B</title>
+<style>
+  :root{
+    --paper:#EDF0F3; --surface:#FFFFFF; --surface-2:#F1F4F7; --surface-3:#E7EBEF;
+    --ink:#0F1620; --ink-2:#33404E; --muted:#5B6672; --faint:#8895A2;
+    --line:#DDE2E8; --line-strong:#C7CFD8;
+    --accent:#0E8A8F; --accent-soft:#DCEFEF;
+    --p0:#CF3B3B; --p0-soft:#FBE7E7; --p1:#C9741E; --p1-soft:#FBEEDD; --p2:#B8971F; --p3:#5E7A94;
+    --ok:#2E7D5B; --ok-soft:#E1F0E8; --warn:#C9741E; --warn-soft:#FBEEDD; --crit:#CF3B3B; --crit-soft:#FBE7E7;
+    --contact:#4E63C4; --contact-soft:#E7EAF8;
+    --shadow:0 1px 2px rgba(15,22,32,.06),0 10px 28px rgba(15,22,32,.07);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --paper:#0A0F14; --surface:#121A22; --surface-2:#0E151C; --surface-3:#1B2530;
+    --ink:#E7ECF1; --ink-2:#C2CCD6; --muted:#8B98A6; --faint:#5F6D7B;
+    --line:#212C36; --line-strong:#33424E;
+    --accent:#2FB6BB; --accent-soft:#0F2C2D;
+    --p0:#E4655F; --p0-soft:#2A1615; --p1:#DF9A4F; --p1-soft:#241A0F; --p2:#D3B24A; --p3:#7C97AC;
+    --ok:#4FB587; --ok-soft:#10241B; --warn:#DF9A4F; --warn-soft:#241A0F; --crit:#E4655F; --crit-soft:#2A1615;
+    --contact:#8B97E6; --contact-soft:#191C30;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.45);
+  }}
+  :root[data-theme="dark"]{
+    --paper:#0A0F14; --surface:#121A22; --surface-2:#0E151C; --surface-3:#1B2530;
+    --ink:#E7ECF1; --ink-2:#C2CCD6; --muted:#8B98A6; --faint:#5F6D7B;
+    --line:#212C36; --line-strong:#33424E; --accent:#2FB6BB; --accent-soft:#0F2C2D;
+    --p0:#E4655F; --p0-soft:#2A1615; --p1:#DF9A4F; --p1-soft:#241A0F; --p2:#D3B24A; --p3:#7C97AC;
+    --ok:#4FB587; --ok-soft:#10241B; --warn:#DF9A4F; --warn-soft:#241A0F; --crit:#E4655F; --crit-soft:#2A1615;
+    --contact:#8B97E6; --contact-soft:#191C30; --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.45);
+  }
+  :root[data-theme="light"]{
+    --paper:#EDF0F3; --surface:#FFFFFF; --surface-2:#F1F4F7; --surface-3:#E7EBEF;
+    --ink:#0F1620; --ink-2:#33404E; --muted:#5B6672; --faint:#8895A2;
+    --line:#DDE2E8; --line-strong:#C7CFD8; --accent:#0E8A8F; --accent-soft:#DCEFEF;
+    --p0:#CF3B3B; --p0-soft:#FBE7E7; --p1:#C9741E; --p1-soft:#FBEEDD; --p2:#B8971F; --p3:#5E7A94;
+    --ok:#2E7D5B; --ok-soft:#E1F0E8; --warn:#C9741E; --warn-soft:#FBEEDD; --crit:#CF3B3B; --crit-soft:#FBE7E7;
+    --contact:#4E63C4; --contact-soft:#E7EAF8; --shadow:0 1px 2px rgba(15,22,32,.06),0 10px 28px rgba(15,22,32,.07);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;
+    -webkit-font-smoothing:antialiased}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  button{font-family:inherit;cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+
+  .intro{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;margin-bottom:14px}
+  .intro h1{font-size:18px;font-weight:720;margin:0;letter-spacing:-.3px}
+  .intro .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;border:1px solid var(--accent);border-radius:5px;padding:1px 7px}
+  .intro p{width:100%;margin:0;color:var(--muted);font-size:13px}
+
+  /* cockpit frame */
+  .cockpit{display:grid;grid-template-columns:248px 1fr 344px;height:min(80vh,720px);
+    background:var(--surface-2);border:1px solid var(--line-strong);border-radius:14px;overflow:hidden;
+    box-shadow:var(--shadow)}
+  .pane{min-width:0;display:flex;flex-direction:column;overflow:hidden}
+  .pane+.pane{border-left:1px solid var(--line)}
+  .ptop{flex:none;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--surface);
+    display:flex;align-items:center;gap:8px}
+  .ptop .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);
+    font-weight:700}
+  .ptop .badge{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--p0);
+    background:var(--p0-soft);border-radius:20px;padding:1px 9px}
+  .pscroll{flex:1;overflow-y:auto;overflow-x:hidden}
+
+  /* left queue */
+  .qrow{position:relative;display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:11px 13px 11px 16px;
+    border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  .qrow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--sevc,var(--p3))}
+  .qrow:hover{background:var(--surface)}
+  .qrow.active{background:var(--surface)}
+  .qrow.active::after{content:"";position:absolute;right:0;top:0;bottom:0;width:2px;background:var(--accent)}
+  .qrow .svc{font-weight:660;font-size:13.5px;grid-column:1}
+  .qrow .sv{font-family:var(--mono);font-size:10px;font-weight:800;color:#fff;background:var(--sevc,var(--p3));
+    border-radius:4px;padding:1px 5px;align-self:center}
+  .qrow .meta{grid-column:1/-1;display:flex;gap:9px;align-items:center;font-family:var(--mono);font-size:11px;
+    color:var(--muted)}
+  .qrow .ec{color:var(--accent);font-weight:700}
+  .qrow .st{margin-left:auto;color:var(--faint)}
+  .qrow .st.diag{color:var(--accent)} .qrow .st.done{color:var(--ok)}
+
+  /* center */
+  .cwrap{padding:16px 18px}
+  .chead .r1{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .chead .sv{font-family:var(--mono);font-weight:800;font-size:11px;color:#fff;border-radius:5px;padding:2px 8px}
+  .chead h2{font-size:16px;font-weight:720;margin:0;letter-spacing:-.2px}
+  .chead .ec{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);
+    border-radius:5px;padding:1px 7px}
+  .chead .r2{display:flex;flex-wrap:wrap;gap:5px 16px;margin-top:9px;font-size:12px;color:var(--muted)}
+  .chead .r2 b{color:var(--ink-2);font-weight:600}
+  .sla{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-weight:700;font-size:12px}
+  .sla .pulse{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .sect{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+    font-weight:700;margin:18px 0 9px}
+  .concl{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .concl .cause{font-size:14.5px;font-weight:670;line-height:1.5;margin:0}
+  .concl .meta{display:flex;flex-wrap:wrap;gap:6px 13px;font-size:11.5px;color:var(--muted);margin-top:8px;align-items:center}
+  .conf{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+  .conf .bars{display:inline-flex;gap:2px}
+  .conf .bars i{width:4px;height:11px;border-radius:1px;background:currentColor}
+  .conf .bars i.off{background:var(--line-strong)}
+
+  .steps{display:grid;gap:8px}
+  .rstep{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;background:var(--surface);
+    border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+  .tier{font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;
+    border-radius:4px;padding:2px 6px;white-space:nowrap;align-self:start;margin-top:2px}
+  .t-auto{color:var(--muted);background:var(--surface-3)} .t-contact{color:var(--contact);background:var(--contact-soft)}
+  .t-write{color:var(--crit);background:var(--crit-soft)}
+  .rstep .tx{font-size:13px;line-height:1.4}
+  .rstep .tx .sub{color:var(--muted);font-size:11.5px;margin-top:1px}
+  .rstep .tx code{font-family:var(--mono);font-size:11px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:3px;padding:0 4px}
+  .rstep.done{opacity:.72} .doneflag{font-family:var(--mono);font-size:10.5px;color:var(--ok);font-weight:700}
+
+  .btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:8px;
+    padding:6px 12px;font-size:12.5px;font-weight:600;transition:.12s;display:inline-flex;align-items:center;gap:5px}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}.btn.pri:hover{filter:brightness(1.06);color:#fff}
+  .btn.danger{background:var(--crit);border-color:var(--crit);color:#fff}.btn.danger:hover{filter:brightness(1.05);color:#fff}
+  .btn.ghost{background:transparent}.btn.sm{padding:4px 9px;font-size:11.5px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .cactions{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+
+  /* right inspector */
+  .evrow{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:10px 14px;
+    border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  .evrow:hover{background:var(--surface)} .evrow.active{background:var(--surface)}
+  .evrow.active .ns{text-decoration:underline;text-underline-offset:3px}
+  .flag{width:8px;height:8px;border-radius:50%;flex:none}
+  .flag.anom{background:var(--crit)} .flag.warn2{background:var(--warn)} .flag.ok{background:var(--ok)}
+  .evrow .ns{font-family:var(--mono);font-weight:700;font-size:11.5px;color:var(--accent)}
+  .evrow .d{font-size:12.5px}
+  .evrow .vd{font-family:var(--mono);font-size:10.5px;font-weight:700;border-radius:5px;padding:1px 6px;white-space:nowrap}
+  .vd.anom{color:var(--crit);background:var(--crit-soft)}.vd.warn2{color:var(--warn);background:var(--warn-soft)}
+  .vd.ok{color:var(--ok);background:var(--ok-soft)}
+  .evdetail{flex:none;border-top:1px solid var(--line);background:var(--surface);padding:12px 14px;max-height:44%;
+    overflow-y:auto}
+  .evdetail .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+    font-weight:700;margin:0 0 5px}
+  .evdetail .lbl+pre{margin-bottom:10px}
+  .evdetail .empty{color:var(--faint);font-size:12px;text-align:center;padding:18px 0}
+  pre{font-family:var(--mono);font-size:11px;line-height:1.5;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:7px;padding:9px 10px;overflow-x:auto;margin:0;color:var(--ink-2)}
+  pre .kw{color:var(--accent);font-weight:700} pre .st{color:var(--ok)} pre .cm{color:var(--faint)}
+  .rtl{flex:none;border-top:1px solid var(--line);padding:11px 14px 13px;background:var(--surface-2);max-height:32%;overflow-y:auto}
+  .rtl .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+    font-weight:700;margin:0 0 8px}
+  .tl{list-style:none;margin:0;padding:0;position:relative}
+  .tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl li{position:relative;padding:3px 0 3px 22px;font-size:11.5px;color:var(--ink-2)}
+  .tl li .dot{position:absolute;left:0;top:6px;width:12px;height:12px;border-radius:50%;background:var(--surface);
+    border:2px solid var(--accent)}
+  .tl li.done .dot{background:var(--accent)} .tl li.now .dot{border-color:var(--p0);box-shadow:0 0 0 3px var(--p0-soft)}
+  .tl li.pending{color:var(--muted)} .tl li.pending .dot{border-color:var(--line-strong)}
+  .tl li .tt{font-family:var(--mono);font-size:10px;color:var(--faint);margin-right:6px}
+
+  /* modal + toast (shared) */
+  .overlay{position:fixed;inset:0;background:rgba(6,10,14,.5);backdrop-filter:blur(2px);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:50}
+  .overlay.on{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow);
+    max-width:430px;width:100%;padding:22px;animation:pop .16s ease-out}
+  @keyframes pop{from{transform:scale(.97);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal h4{margin:0 0 6px;font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:9px}
+  .modal .warnico{width:26px;height:26px;border-radius:7px;background:var(--crit-soft);color:var(--crit);
+    display:grid;place-items:center;font-size:15px;flex:none}
+  .modal p{margin:0 0 6px;font-size:13px;color:var(--ink-2)}
+  .modal .detail{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:9px;padding:10px 12px;margin:12px 0;color:var(--ink-2);line-height:1.6}
+  .modal label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;font-weight:600}
+  .modal textarea{width:100%;font-family:var(--sans);font-size:13px;color:var(--ink);background:var(--surface-2);
+    border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;resize:vertical}
+  .modal .foot{display:flex;gap:9px;justify-content:flex-end;margin-top:18px}
+  #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;
+    z-index:60;align-items:center;pointer-events:none}
+  .toast{background:var(--ink);color:var(--surface);font-size:13px;padding:10px 16px;border-radius:10px;
+    box-shadow:var(--shadow);display:flex;align-items:center;gap:9px;animation:tin .2s ease-out}
+  .toast .ic{color:var(--ok)} @keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  .cmp{margin-top:14px;font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:12px 15px}
+  .cmp b{color:var(--ink)}
+  .cmp .vs{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:700}
+
+  @media(max-width:880px){
+    .cockpit{grid-template-columns:1fr;height:auto}
+    .pane+.pane{border-left:none;border-top:1px solid var(--line)}
+    .pscroll{max-height:340px}
+    .evdetail,.rtl{max-height:none}
+  }
+</style>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>智能排障 · 值班驾驶舱</h1>
+    <span class="tag">版式 B</span>
+    <p>对照版式 A（单故障详情页 · IM 优先 · 纵向）。此版为三栏应用式：<b class="mono" style="color:var(--accent)">左队列 · 中处置 · 右证据检视</b>，面向"同时盯多个故障"的值班场景。点左侧队列可切换故障；点右侧证据看 DQL。</p>
+  </div>
+
+  <div class="cockpit">
+    <!-- left: queue -->
+    <div class="pane">
+      <div class="ptop"><span class="lbl">故障队列</span><span class="badge" id="qBadge">2 活跃 · 1 P0</span></div>
+      <div class="pscroll" id="queue"></div>
+    </div>
+    <!-- center: handling -->
+    <div class="pane">
+      <div class="ptop"><span class="lbl">处置区</span><span class="mono" style="margin-left:auto;font-size:11px;color:var(--faint)" id="cState">诊断中</span></div>
+      <div class="pscroll"><div class="cwrap" id="center"></div></div>
+    </div>
+    <!-- right: evidence inspector -->
+    <div class="pane">
+      <div class="ptop"><span class="lbl">证据检视</span><span class="mono" id="evBadge" style="margin-left:auto;font-size:11px;color:var(--faint)"></span></div>
+      <div class="pscroll" id="evList"></div>
+      <div class="evdetail" id="evDetail"><div class="empty">点击上方任一证据，查看执行的 DQL 与返回</div></div>
+      <div class="rtl"><div class="lbl">处置时间线 · 自动留痕</div><ul class="tl" id="timeline"></ul></div>
+    </div>
+  </div>
+
+  <div class="cmp">
+    <span class="vs">A vs B</span> &nbsp;<b>版式 A</b> 适合 IM 触达后单点深挖、复盘沉淀，一页讲清一个故障的来龙去脉；<b>版式 B</b> 适合值班台同时盯多个故障、快速在队列间切换、边看证据边处置。两者共用同一后端「诊断结论对象」——不是二选一，可并存为两个入口。
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div id="toasts"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $=s=>document.querySelector(s), sevColor={P0:'var(--p0)',P1:'var(--p1)',P2:'var(--p2)'};
+
+  const incidents=[
+    {
+      id:'INC-903001', sev:'P0', service:'csdp-wechat', ecode:'903001',
+      title:'数据库访问异常', impact:'所有客户 · 小程序不可用', type:'依赖异常 · 中间件',
+      trace:'a7f3e9c2-4b81', sla:'14:31', status:'诊断中', statusCls:'diag',
+      cause:'MongoDB 实例（10.6.104.169）连接数打满，csdp-wechat 无法访问数据库',
+      conf:'高', confN:3, sop:'mongo/conn-exhausted（公共层）',
+      steps:[
+        {tier:'auto',tl:'自动 · 只读',tx:'已自动拉取 Mongo 指标与错误日志',sub:'4 条 DQL，3 项判定异常',done:true},
+        {tier:'contact',tl:'联系 · 找人',tx:'联系 <b>树朝（DBA）</b>处理数据库',sub:'实例 <code>10.6.104.169</code>',act:'@ 通知',actMsg:'已在故障群 @树朝(DBA)，并附带上下文'},
+        {tier:'write',tl:'写操作 · 需确认',tx:'重启 MongoDB 实例',sub:'参考《中间件 Mongodb 恢复方案》',write:true}
+      ],
+      evidence:[
+        {ns:'L::',d:'错误日志 error_code=903001',vd:'异常 · 47 条',flag:'anom',
+          dql:'<span class="kw">L::</span>csdp_log:(error_code,trace_id,error_msg)\n   { service=<span class="st">\'csdp-wechat\'</span>, error_code=<span class="st">\'903001\'</span> } [14:13–14:18]',
+          more:{lbl:'返回样本（1/47）',pre:'{ <span class="cm">"error_code"</span>:<span class="st">"903001"</span>,\n  <span class="cm">"error_msg"</span>:<span class="st">"mongo 连接获取超时"</span>,\n  <span class="cm">"trace_id"</span>:<span class="st">"a7f3e9c2-4b81"</span> }'}},
+        {ns:'M::',d:'Mongo 连接数',vd:'982 / 1000',flag:'anom',
+          dql:'<span class="kw">M::</span>mongodb:(connections) { host=<span class="st">\'10.6.104.169\'</span> } [14:13–14:18]',
+          more:{lbl:'判据 anomaly_criteria',pre:'connections / max &gt; 0.9  →  <span class="st">异常</span>  (当前 0.98)'}},
+        {ns:'M::',d:'Mongo 慢查询',vd:'激增 · 关注',flag:'warn2',
+          dql:'<span class="kw">M::</span>mongodb:(slow_queries) { host=<span class="st">\'10.6.104.169\'</span> } [14:13–14:18] BY op'},
+        {ns:'T::',d:'调用链 · 第 3 跳',vd:'mongo 超时',flag:'anom',
+          dql:'<span class="kw">T::</span>tracing:(service,duration,status) { trace_id=<span class="st">\'a7f3e9c2-4b81\'</span> }',
+          more:{lbl:'链路',pre:'wechat-api → workorder-svc → <span class="st">mongo 超时 5001ms ✗</span>'}}
+      ],
+      timeline:[
+        {t:'14:18:02',x:'告警触发（观测云）',c:'done'},
+        {t:'14:18:03',x:'路由命中 (csdp,903001)',c:'done'},
+        {t:'14:18:05',x:'自动取证 4 条，3 异常',c:'done'},
+        {t:'14:18:07',x:'生成结论 · 置信高',c:'now'},
+        {t:'— —:—',x:'等待处置',c:'pending'}
+      ]
+    },
+    {
+      id:'INC-901002', sev:'P1', service:'csdp-wechat', ecode:'901002',
+      title:'微信获取手机号错误', impact:'部分客户 · 无法一键登录', type:'依赖异常 · 微信 API',
+      trace:'c1d8b4a0-92ef', sla:'27:09', status:'诊断中', statusCls:'diag',
+      cause:'微信小程序白名单限制导致 GetPhoneNumber 返回错误码，需人工放开限制',
+      conf:'中', confN:2, sop:'wechat/phone-restricted（业务层）',
+      steps:[
+        {tier:'auto',tl:'自动 · 只读',tx:'已自动拉取微信 API 错误日志与返回码',sub:'2 条 DQL，1 项异常',done:true},
+        {tier:'contact',tl:'联系 · 找人',tx:'联系 <b>伟彬</b>关闭微信小程序白名单限制',sub:'需查看微信返回错误码定位',act:'@ 通知',actMsg:'已在故障群 @伟彬，并附带微信返回码'},
+        {tier:'contact',tl:'联系 · 找人',tx:'如持续异常，联系微信侧确认限制策略',sub:'外部依赖 · 非本系统可自愈',act:'@ 通知',actMsg:'已记录待联系微信侧'}
+      ],
+      evidence:[
+        {ns:'L::',d:'微信错误日志 error_code=901002',vd:'异常 · 12 条',flag:'anom',
+          dql:'<span class="kw">L::</span>csdp_log:(error_code,error_msg,stack_trace)\n   { service=<span class="st">\'csdp-wechat\'</span>, error_code=<span class="st">\'901002\'</span> } [14:05–14:20]',
+          more:{lbl:'返回样本',pre:'{ <span class="cm">"error_code"</span>:<span class="st">"Customer_GetOpenIdFailed_001"</span>,\n  <span class="cm">"error_msg"</span>:<span class="st">"微信API返回错误码,白名单限制"</span> }'}},
+        {ns:'M::',d:'微信 API 成功率',vd:'88% · 关注',flag:'warn2',
+          dql:'<span class="kw">M::</span>http:(success_rate) { target=<span class="st">\'api.weixin.qq.com\'</span> } [14:05–14:20]'}
+      ],
+      timeline:[
+        {t:'14:20:11',x:'告警触发（观测云）',c:'done'},
+        {t:'14:20:12',x:'路由命中 (csdp,901002)',c:'done'},
+        {t:'14:20:14',x:'自动取证 2 条，1 异常',c:'done'},
+        {t:'14:20:15',x:'生成结论 · 置信中',c:'now'},
+        {t:'— —:—',x:'等待处置',c:'pending'}
+      ]
+    }
+  ];
+
+  let cur=incidents[0], curEv=-1;
+
+  window.toast=function(msg,ic){const t=document.createElement('div');t.className='toast';
+    t.innerHTML=(ic?'<span class="ic">✓</span>':'')+'<span>'+msg+'</span>';$('#toasts').appendChild(t);
+    setTimeout(()=>{t.style.transition='.3s';t.style.opacity='0';setTimeout(()=>t.remove(),300);},2500);};
+
+  function renderQueue(){
+    $('#queue').innerHTML=incidents.map((it,i)=>`
+      <div class="qrow ${it===cur?'active':''}" style="--sevc:${sevColor[it.sev]}" onclick="selInc(${i})">
+        <span class="svc">${it.service}</span>
+        <span class="sv" style="background:${sevColor[it.sev]}">${it.sev}</span>
+        <span class="meta"><span class="ec">${it.ecode}</span> ${it.title}<span class="st ${it.statusCls}">${it.status}</span></span>
+      </div>`).join('');
+  }
+  function confBars(n){let s='';for(let i=0;i<4;i++)s+='<i class="'+(i<n?'':'off')+'"></i>';return s;}
+  function renderCenter(){
+    const it=cur, cc=(it.conf==='高'?'var(--ok)':it.conf==='中'?'var(--warn)':'var(--crit)');
+    $('#cState').textContent=it.status;
+    $('#center').innerHTML=`
+      <div class="chead">
+        <div class="r1">
+          <span class="sv" style="background:${sevColor[it.sev]}">${it.sev}</span>
+          <h2>${it.service} · ${it.title}</h2>
+          <span class="ec">${it.ecode}</span>
+        </div>
+        <div class="r2">
+          <span class="sla" style="color:${sevColor[it.sev]}"><span class="pulse"></span>SLA ${it.sla}</span>
+          <span><b>影响</b> ${it.impact}</span>
+          <span><b>类型</b> ${it.type}</span>
+          <span><b>trace</b> <span class="mono">${it.trace}</span></span>
+        </div>
+      </div>
+      <div class="sect">诊断结论</div>
+      <div class="concl">
+        <p class="cause">${it.cause}</p>
+        <div class="meta">
+          <span class="conf" style="color:${cc}"><span class="bars">${confBars(it.confN)}</span> 置信度 ${it.conf}</span>
+          <span>命中 SOP <span class="mono">${it.sop}</span></span>
+        </div>
+      </div>
+      <div class="sect">推荐路径 · 恢复动作三分级</div>
+      <div class="steps">
+        ${it.steps.map((s,si)=>`
+          <div class="rstep ${s.done?'done':''}">
+            <span class="tier t-${s.tier}">${s.tl}</span>
+            <div class="tx">${s.tx}<div class="sub">${s.sub}</div></div>
+            ${s.done?'<span class="doneflag">✓ 已完成</span>'
+              :s.write?'<button class="btn danger sm" onclick="openWrite()">待确认 ⚠</button>'
+              :`<button class="btn sm" onclick="toast('${s.actMsg}','ic')">${s.act}</button>`}
+          </div>`).join('')}
+      </div>
+      <div class="cactions">
+        <button class="btn pri sm" id="cfBtn" onclick="confirmConcl()">确认结论</button>
+        <button class="btn sm" onclick="openTransfer()">转派</button>
+        ${it.steps.some(s=>s.write)?'<button class="btn danger sm" onclick="openWrite()">执行写操作</button>':''}
+        <button class="btn ghost sm" onclick="openClose()">关闭并沉淀</button>
+      </div>`;
+  }
+  function renderEv(){
+    const it=cur;
+    $('#evBadge').textContent=it.evidence.length+' 项';
+    $('#evList').innerHTML=it.evidence.map((e,i)=>`
+      <div class="evrow ${i===curEv?'active':''}" onclick="selEv(${i})">
+        <span class="flag ${e.flag}"></span>
+        <span><span class="ns">${e.ns}</span> <span class="d">${e.d}</span></span>
+        <span class="vd ${e.flag}">${e.vd}</span>
+      </div>`).join('');
+    renderEvDetail();
+  }
+  function renderEvDetail(){
+    const el=$('#evDetail');
+    if(curEv<0){el.innerHTML='<div class="empty">点击上方任一证据，查看执行的 DQL 与返回</div>';return;}
+    const e=cur.evidence[curEv];
+    el.innerHTML=`<div class="lbl">执行的 DQL</div><pre>${e.dql}</pre>`+
+      (e.more?`<div class="lbl">${e.more.lbl}</div><pre>${e.more.pre}</pre>`:'');
+  }
+  function renderTL(){
+    $('#timeline').innerHTML=cur.timeline.map(t=>`
+      <li class="${t.c}"><span class="dot"></span><span class="tt">${t.t}</span>${t.x}</li>`).join('');
+  }
+  function logTL(t,x){
+    const p=cur.timeline.find(e=>e.c==='pending'); const idx=cur.timeline.indexOf(p);
+    cur.timeline.splice(idx,0,{t:t,x:x,c:'done'}); renderTL();
+  }
+
+  window.selInc=i=>{cur=incidents[i];curEv=-1;renderQueue();renderCenter();renderEv();renderTL();};
+  window.selEv=i=>{curEv=i;renderEv();};
+  window.confirmConcl=function(){cur.status='已确认';cur.statusCls='done';
+    logTL('14:18:24','一线确认诊断结论');renderQueue();$('#cState').textContent='已确认';
+    const b=$('#cfBtn');if(b){b.textContent='已确认';b.disabled=true;}toast('已确认结论，记入时间线','ic');};
+
+  const overlay=$('#overlay'),modal=$('#modal');
+  function openOverlay(){overlay.classList.add('on');}
+  window.closeOverlay=()=>overlay.classList.remove('on');
+  overlay.addEventListener('click',e=>{if(e.target===overlay)closeOverlay();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlay();});
+
+  window.openWrite=function(){
+    modal.innerHTML=`<h4><span class="warnico">⚠</span>确认执行写操作</h4>
+      <p>该操作会<b>重启生产实例</b>，可能造成短暂中断，执行将自动留痕。</p>
+      <div class="detail">动作　 重启实例<br>影响　 ${cur.service} 依赖恢复<br>依据　 SOP ${cur.sop}</div>
+      <label>确认原因（记入审计）</label><textarea rows="2" id="wr" placeholder="例：连接数打满，确认需重启释放连接池"></textarea>
+      <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button>
+        <button class="btn danger sm" onclick="doWrite()">确认执行</button></div>`;
+    openOverlay();
+  };
+  window.doWrite=function(){const r=($('#wr').value||'').trim();closeOverlay();
+    logTL('14:18:41','执行写操作：重启实例'+(r?('（'+r+'）'):''));toast('写操作已执行并留痕','ic');};
+
+  window.openTransfer=function(){
+    modal.innerHTML=`<h4>结构化转派</h4><p>整份故障上下文随工单流转，接手方无需重新排查。</p>
+      <div class="detail">error_code　 ${cur.ecode}<br>trace_id　　 ${cur.trace}<br>已确认证据　 ✓ 随工单携带<br>建议动作　　 见推荐路径</div>
+      <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button>
+        <button class="btn pri sm" onclick="doTransfer()">转派并同步群</button></div>`;
+    openOverlay();
+  };
+  window.doTransfer=function(){closeOverlay();cur.status='已转派';cur.statusCls='';
+    logTL('14:18:33','转派（携带完整上下文）');renderQueue();toast('已转派，上下文随工单同步','ic');};
+
+  window.openClose=function(){
+    modal.innerHTML=`<h4>关闭并沉淀</h4><p>处置过程将归档；可顺手修正 SOP 使其更准。</p>
+      <div class="detail">命中 SOP　 ${cur.sop}<br>处置结果　 服务恢复</div>
+      <label>修正 / 补充 SOP（可选 · 写回知识库）</label>
+      <textarea rows="2" id="sn" placeholder="例：补充 anomaly_criteria，减少误报"></textarea>
+      <div class="foot"><button class="btn ghost sm" onclick="doClose(false)">仅归档</button>
+        <button class="btn pri sm" onclick="doClose(true)">关闭并写回 SOP</button></div>`;
+    openOverlay();
+  };
+  window.doClose=function(wb){const n=($('#sn')&&$('#sn').value||'').trim();closeOverlay();
+    cur.status='已关闭';cur.statusCls='done';logTL('14:24:10','关闭工单，过程归档');
+    if(wb&&n)logTL('14:24:11','SOP 候选修正提交审核');renderQueue();$('#cState').textContent='已关闭';
+    toast(wb?'已关闭，SOP 修正进入审核队列':'已归档关闭','ic');};
+
+  renderQueue();renderCenter();renderEv();renderTL();
+})();
+</script>
