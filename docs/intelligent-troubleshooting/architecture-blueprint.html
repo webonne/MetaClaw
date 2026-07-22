@@ -904,10 +904,69 @@
     </div>
   </section>
 
-  <!-- 8 决策记录 -->
+  <!-- 11 上线取信 · 放权阶梯 -->
   <section>
     <div class="sec-head">
       <div class="sec-num">11</div>
+      <div class="eyebrow">上线取信 · 放权阶梯</div>
+      <h2>怎么敢用、怎么让领导放心逐步放权</h2>
+    </div>
+    <p class="sub">知识只有 ~20% 可执行，系统必然会错——不能直接开。核心思路：<b>不追求知识全好才上线，而是"先证明、再按挣到的信任逐格放权"</b>。这套策略正是管理主要矛盾（知识质量）的办法。</p>
+
+    <h3>两个互补机制</h3>
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th></th><th>历史回归集（离线）</th><th>影子模式（在线）</th></tr></thead>
+        <tbody>
+          <tr><td class="mono-c">时机</td><td>上线<b>前</b> + 每次改动后</td><td>上线<b>后</b>、真实流量上</td></tr>
+          <tr><td class="mono-c">怎么做</td><td>过去已解决故障回放，对比结论 vs 真实根因</td><td>与真人并行跑实时告警，输出<b>先不给一线</b>、只记录比对</td></tr>
+          <tr><td class="mono-c">作用</td><td>准确率基线 + <b>回归闸门</b>（改动不许把分改低）</td><td>抓离线测不到的：新模式、数据漂移、真实命中率</td></tr>
+          <tr><td class="mono-c">Ground truth</td><td>已知真实根因（《故障与措施》表 + 历史工单）</td><td>人实际处置结果 + 专家定期抽检</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub" style="margin-top:10px">回归集起步不用多：每个试点错误码挑 <b>20–30 条真实历史故障</b>即可。</p>
+
+    <h3>放权阶梯 —— 按错误码粒度逐格毕业</h3>
+    <p class="sub">放权不是一刀切开关，而是一级一级挣，每级由上一级指标达标解锁；<b>且按错误码/场景粒度</b>——某个错误码证明了才升档，别的仍在低档。（门槛数值留空，待真实数据标定。）</p>
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>档</th><th>系统做什么</th><th>人做什么</th><th>风险</th><th>解锁条件</th></tr></thead>
+        <tbody>
+          <tr><td><span class="lvl">S0 影子</span></td><td>全程跑，输出<b>隐藏</b>，只记录比对</td><td>照常人工排障</td><td><span class="chip c-me" style="color:var(--ok);background:var(--ok-soft)">零</span></td><td class="mono-c">起点</td></tr>
+          <tr><td><span class="lvl">S1 建议</span></td><td>输出作为<b>建议</b>展示（copilot）</td><td>决定一切，可采纳/否决</td><td class="mono-c">极低</td><td class="mono-c">影子期根因正确率 ≥ 阈值</td></tr>
+          <tr><td><span class="lvl">S2 只读自动取证</span></td><td>自动跑<b>只读</b>取证，给证据+结论</td><td>判读、决策、执行</td><td class="mono-c">低（只读）</td><td class="mono-c">采纳率达标 <b>且有害错误≈0</b></td></tr>
+          <tr><td><span class="lvl">S3 半自动</span></td><td>高置信+高命中码：自动只读动作/自动分派</td><td>管写操作与兜底</td><td class="mono-c">中</td><td class="mono-c">该码 S2 准确率达标</td></tr>
+          <tr><td><span class="lvl" style="color:var(--crit)">写操作</span></td><td><b>永不自动</b></td><td><b>永远人工确认</b></td><td class="mono-c">—</td><td class="mono-c">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>什么算「对」—— 评判标准</h3>
+    <div class="principles" style="margin-top:14px">
+      <div class="principle"><h4>根因 / 路径正确率</h4><p>根因判定是否等于实际根因；推荐路径是否命中真正有效的动作。</p></div>
+      <div class="principle"><h4>误报 / 漏报</h4><p>把正常判成异常、或异常判成正常，分开统计。</p></div>
+      <div class="principle" style="border-left-color:var(--crit)"><h4>⚠ 置信度校准</h4><p>最危险的是<b>高置信却错</b>——单独盯死；高置信错误零容忍。</p></div>
+      <div class="principle" style="border-left-color:var(--crit)"><h4>有害错误零容忍</h4><p>把人<b>引向错方向</b>（有害）零容忍；只是没帮上忙（无害）可接受。两者分开看。</p></div>
+    </div>
+
+    <div class="crux" style="border-color:color-mix(in srgb,var(--ok) 45%,transparent);background:color-mix(in srgb,var(--ok) 8%,transparent);margin-top:16px">
+      <div class="lab" style="color:var(--ok)">给领导的定心丸</div>
+      <p>"只在<b>被证明可靠</b>的错误码上自动跑，其余全程人工监督；覆盖面随知识补全<b>逐格扩大</b>，且<b>写操作永远要人点头</b>。"——不需要知识全好才敢上线。这也是 <b>实践认识论</b>：方案是假设 → 影子/回归是实践检验 → 修正认知 → 再放权。</p>
+    </div>
+
+    <h3>放权期间的护栏</h3>
+    <ul class="pain" style="margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px">
+      <li><b>一键回退纯人工</b>（kill switch），随时可停。</li>
+      <li><b>爆炸半径限制</b>：按系统/级别限流；<b>P0 一开始就跑影子</b>（越早攒准确率越好）但<b>绝不自动</b>。</li>
+      <li><b>否决即触发复审</b>：人每否决/纠正一次 → 记录 → 自动标记该 SOP 复审（喂闭环）。</li>
+    </ul>
+  </section>
+
+  <!-- 8 决策记录 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">12</div>
       <div class="eyebrow">决策记录</div>
       <h2>已锁定的三个架构决定</h2>
     </div>
@@ -944,13 +1003,21 @@
           <div class="imp"><b>下游约束</b> MetaClaw 只注入方法+学习、不跑循环；SOP 分两层（结构化 KB + MetaClaw skill）；信任工程五条约束落在 orchestrator + 工具契约层（详见 §10）。</div>
         </div>
       </div>
+      <div class="dec">
+        <div class="lock">✓</div>
+        <div>
+          <h4>D5 · 上线取信 = 影子 + 历史回归集 + 放权阶梯</h4>
+          <p>放权阶梯 S0 影子 → S1 建议 → S2 只读自动取证 → S3 半自动，写操作永不自动；按错误码粒度逐格毕业；门槛留空待真实数据标定。</p>
+          <div class="imp"><b>下游约束</b> 有害错误 / 高置信却错零容忍；P0 一开始就跑影子但不自动；否决即触发 SOP 复审；每个错误码带「自主档」状态（详见 §11）。</div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- 11 风险与修正 -->
   <section>
     <div class="sec-head">
-      <div class="sec-num">12</div>
+      <div class="sec-num">13</div>
       <div class="eyebrow">风险与修正</div>
       <h2>用「实事求是」复核后的诚实修正</h2>
       <div class="method-note">评审方法：调查研究 → 矛盾分析 → 批评与自我批评 · 数据取自《故障与措施》原表</div>
@@ -1024,7 +1091,7 @@
   <!-- 12 下一步 -->
   <section>
     <div class="sec-head">
-      <div class="sec-num">13</div>
+      <div class="sec-num">14</div>
       <div class="eyebrow">下一步</div>
       <h2>待推进事项</h2>
     </div>
@@ -1033,7 +1100,7 @@
       <div class="step done"><span class="s">已定</span><div><b>告警接入方式</b><p>webhook + 手动录入两入口；手动支持贴日志/现象由 LLM 抽取；completeness 驱动路由；幂等键去重（详见 ①层 / §6 / 契约）。</p></div></div>
       <div class="step done"><span class="s">已定</span><div><b>编排层落地形态</b><p>自建轻量 orchestrator（LLM 走 MetaClaw）+ 工具走 MCP；两层 SOP；信任工程五约束（详见 §10 · D4）。</p></div></div>
       <div class="step todo"><span class="s">待讨论</span><div><b>DQL 模板运营</b><p>先人工为高频错误码写 evidence_dql，还是从历史处理记录学习生成——知识运营方式（R6 主要矛盾侧）。</p></div></div>
-      <div class="step todo"><span class="s">待讨论</span><div><b>上线取信策略</b><p>影子模式并行比对 + 历史故障回归集，逐步放权（架构议题 · trust & safety）。</p></div></div>
+      <div class="step done"><span class="s">已定</span><div><b>上线取信策略</b><p>影子 + 历史回归集 + 放权阶梯 S0→S3（写操作永不自动）；按错误码逐格毕业；有害/高置信错误零容忍（详见 §11 · D5）。门槛数值待真实数据标定。</p></div></div>
       <div class="step todo"><span class="s">建议</span><div><b>L0 竖切起步</b><p>选错误码 903001，落地结构化 SOP 库 + 一条端到端竖线（可先用录制响应，不依赖内网）。</p></div></div>
     </div>
   </section>
