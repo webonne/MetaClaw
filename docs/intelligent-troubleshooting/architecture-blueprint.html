@@ -336,7 +336,7 @@
     <div class="meta">
       <span><i class="dot"></i><b>范围</b> CSDP 工单/客服链路（首个域）</span>
       <span><i class="dot"></i><b>证据源</b> 观测云 Guance · DQL</span>
-      <span><i class="dot"></i><b>状态</b> 架构已收敛 · v0.2 修订版</span>
+      <span><i class="dot"></i><b>状态</b> 架构已收敛 · L0 已启动 · v0.3</span>
     </div>
   </div>
 </header>
@@ -1033,7 +1033,7 @@
     <div class="sec-head">
       <div class="sec-num">13</div>
       <div class="eyebrow">决策记录</div>
-      <h2>已锁定的三个架构决定</h2>
+      <h2>已锁定的六个架构决定</h2>
     </div>
     <div class="decisions" style="margin-top:18px">
       <div class="dec">
@@ -1096,7 +1096,7 @@
       <div class="method-note">评审方法：调查研究 → 矛盾分析 → 批评与自我批评 · 数据取自《故障与措施》原表</div>
     </div>
     <p class="sub">架构骨架成立（双路脊柱、error_code 确定性键、两层知识库、API-first 均予保留）。但一次基于真实数据的复核暴露出一个诚实落差：<b>蓝图描绘的自动化程度，超出了现有知识资产能支撑的程度。</b></p>
-    <p class="sub" style="margin-top:8px">本 <b>v0.2 修订版</b>已把结构性问题 <b style="color:var(--hit)">R1 / R3 / R5</b> 落进正文各节（契约、原则、路由、运转图均已对齐）；<b>R2 / R4 / R6</b> 属知识与运营侧，非改文档能了结，仍待攻坚。</p>
+    <p class="sub" style="margin-top:8px">结构性问题 <b style="color:var(--hit)">R1 / R3 / R5</b> 已落进正文各节；<b style="color:var(--hit)">R6</b> 已立知识运营机制（§12）；<b>R2 / R4</b>（anomaly_criteria 补全、审核 SLA）属知识与运营侧，随 L0 补全推进。</p>
 
     <div class="crux">
       <div class="lab">主要矛盾</div>
@@ -1174,12 +1174,13 @@
       <div class="step done"><span class="s">已定</span><div><b>编排层落地形态</b><p>自建轻量 orchestrator（LLM 走 MetaClaw）+ 工具走 MCP；两层 SOP；信任工程五约束（详见 §10 · D4）。</p></div></div>
       <div class="step todo"><span class="s">待讨论</span><div><b>DQL 模板运营</b><p>先人工为高频错误码写 evidence_dql，还是从历史处理记录学习生成——知识运营方式（R6 主要矛盾侧）。</p></div></div>
       <div class="step done"><span class="s">已定</span><div><b>上线取信策略</b><p>影子 + 历史回归集 + 放权阶梯 S0→S3（写操作永不自动）；按错误码逐格毕业；有害/高置信错误零容忍（详见 §11 · D5）。门槛数值待真实数据标定。</p></div></div>
-      <div class="step todo"><span class="s">建议</span><div><b>L0 竖切起步</b><p>选错误码 903001，落地结构化 SOP 库 + 一条端到端竖线（可先用录制响应，不依赖内网）。</p></div></div>
+      <div class="step done"><span class="s">进行中</span><div><b>L0 知识底座</b><p>已从《故障与措施》建结构化 SOP 库（146 错误码，status=candidate）+ 家底盘点（60% 有恢复、32% 可自动化候选、26 个 P0/P1 首批）。见 <code style="background:transparent;border:none;color:inherit">l0/</code>。</p></div></div>
+      <div class="step todo"><span class="s">下一步</span><div><b>903001 端到端竖线</b><p>人工审核候选条目 → 补 evidence_dql + anomaly_criteria → 接观测云真实取证 → 建 20–30 条历史回归集接影子模式。</p></div></div>
     </div>
   </section>
 
   <footer>
-    <span>IT 智能排障系统 · 架构与演进蓝图 v0.2 修订版</span>
+    <span>IT 智能排障系统 · 架构与演进蓝图 v0.3</span>
     <span>确定性优先 · LLM 兜底 · 人机协同 · 知识闭环</span>
   </footer>
 
