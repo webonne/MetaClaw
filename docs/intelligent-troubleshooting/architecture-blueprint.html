@@ -1105,18 +1105,18 @@
 
     <h3>知识资产盘点（一手数据）</h3>
     <div class="stats">
-      <div class="stat"><div class="num n-bad">~20%</div><div class="cap">端到端可自动化的场景占比（有可执行命令）</div><div class="bar"><i class="b-bad" style="width:21%"></i></div></div>
-      <div class="stat"><div class="num n-warn">30–52%</div><div class="cap">错误码 / 场景「有恢复方案」的比例</div><div class="bar"><i class="b-warn" style="width:52%"></i></div></div>
-      <div class="stat"><div class="num n-warn">~50%</div><div class="cap">已有恢复方案中属「联系某人处理」式</div><div class="bar"><i class="b-warn" style="width:50%"></i></div></div>
-      <div class="stat"><div class="num n-good">100%</div><div class="cap">错误码注册完整（唯一的地基亮点）</div><div class="bar"><i class="b-good" style="width:100%"></i></div></div>
+      <div class="stat"><div class="num n-bad">21%</div><div class="cap">只读自动化候选（30/146，仍需解阻断）</div><div class="bar"><i class="b-bad" style="width:21%"></i></div></div>
+      <div class="stat"><div class="num n-warn">62%</div><div class="cap">有恢复方案（90/146）</div><div class="bar"><i class="b-warn" style="width:62%"></i></div></div>
+      <div class="stat"><div class="num n-good">3%</div><div class="cap">已有恢复方案中纯「联系某人」式（3/90）</div><div class="bar"><i class="b-good" style="width:3%"></i></div></div>
+      <div class="stat"><div class="num n-bad">106</div><div class="cap">当前质量阻断（3 冲突 + 103 源损伤）</div><div class="bar"><i class="b-bad" style="width:100%"></i></div></div>
     </div>
-    <p class="sub" style="margin-top:12px">含义：一半以上错误码没有可执行恢复；有恢复的里约一半是「路由给某个人」。若不补齐，系统会退化成「告警路由器 + 联系人推荐机」——仍有价值，但不是「自动取证 + 恢复」。</p>
+    <p class="sub" style="margin-top:12px">含义：62% 路由键有恢复方案，但只有 21% 至少含明确只读自动化步骤；纯联系人式仅 3%，真正阻断来自错误码上下文冲突与旧解析器丢字符。若不先清理 106 处阻断，候选比例不能当作可上线自动化率。</p>
 
     <h3>风险清单与修正（治病救人：每条配改进）</h3>
     <div class="risks">
       <div class="risk"><span class="sev sev-hi">🔴 高</span><div>
         <h4>R1 · 蓝图美化了「自动化程度」</h4>
-        <p>recovery_steps 被画得像可自动执行，但真实数据近半是「联系某人」。</p>
+        <p>recovery_steps 被画得像可自动执行，但旧口径混入了写操作/未知动作，且当前仍有 106 处质量阻断。</p>
         <div class="fix"><b>修正 · ✓ 本版已落地</b>recovery_step 增加 <code>action_type: auto_readonly / human_contact / manual_write</code>（已入契约与设计原则）；度量单列「<b style="color:var(--accent)">可自动化率</b>」，不拿覆盖率冒充自动化率。对上汇报据实：一期本质是智能分诊+取证+找对人。</div>
       </div></div>
       <div class="risk"><span class="sev sev-hi">🔴 高</span><div>
@@ -1141,7 +1141,7 @@
       </div></div>
       <div class="risk"><span class="sev sev-mid">🟡 中</span><div>
         <h4>R6 · 片面性：重技术架构、轻知识运营</h4>
-        <p>谁来补那 70% 空缺的恢复方案？一线凭什么花时间写 SOP？知识侧恰是主要矛盾，却没有运营与激励机制——知识库会饿死。</p>
+        <p>谁来让近八成仍非只读自动化候选的路由键可用？一线凭什么花时间写 SOP？知识侧恰是主要矛盾，却没有运营与激励机制——知识库会饿死。</p>
         <div class="fix"><b>修正 · ✓ 已立机制（§12）</b>知识运营独立成一条工作线：沉淀嵌进流程 + 贡献者受益 + 专家只审核；三来源 + 生命周期 + KPI 激励。仍是持久战，需真实投入。</div>
       </div></div>
     </div>
@@ -1174,7 +1174,7 @@
       <div class="step done"><span class="s">已定</span><div><b>编排层落地形态</b><p>自建轻量 orchestrator（LLM 走 MetaClaw）+ 工具走 MCP；两层 SOP；信任工程五约束（详见 §10 · D4）。</p></div></div>
       <div class="step todo"><span class="s">待讨论</span><div><b>DQL 模板运营</b><p>先人工为高频错误码写 evidence_dql，还是从历史处理记录学习生成——知识运营方式（R6 主要矛盾侧）。</p></div></div>
       <div class="step done"><span class="s">已定</span><div><b>上线取信策略</b><p>影子 + 历史回归集 + 放权阶梯 S0→S3（写操作永不自动）；按错误码逐格毕业；有害/高置信错误零容忍（详见 §11 · D5）。门槛数值待真实数据标定。</p></div></div>
-      <div class="step done"><span class="s">进行中</span><div><b>L0 知识底座</b><p>已从《故障与措施》建结构化 SOP 库（146 错误码，status=candidate）+ 家底盘点（60% 有恢复、32% 可自动化候选、26 个 P0/P1 首批）。见 <code style="background:transparent;border:none;color:inherit">l0/</code>。</p></div></div>
+      <div class="step done"><span class="s">进行中</span><div><b>L0 知识底座</b><p>已从《故障与措施》建结构化 SOP 库（146 个 D1 路由键，status=candidate）+ 清洗后家底盘点（62% 有恢复、30/146 约 21% 为只读自动化候选、18 个 P0/P1 首批审核对象；仍有质量阻断）。见 <code style="background:transparent;border:none;color:inherit">l0/</code>。</p></div></div>
       <div class="step todo"><span class="s">下一步</span><div><b>903001 端到端竖线</b><p>人工审核候选条目 → 补 evidence_dql + anomaly_criteria → 接观测云真实取证 → 建 20–30 条历史回归集接影子模式。</p></div></div>
     </div>
   </section>

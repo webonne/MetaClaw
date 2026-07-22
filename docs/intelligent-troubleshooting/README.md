@@ -21,14 +21,30 @@
 
 ## L0 知识底座（已启动）
 
-- [`l0/inventory_report.md`](./l0/inventory_report.md) — 家底盘点：146 错误码、60% 有恢复方案、
-  ~32% 可自动化候选、26 个 P0/P1 首批激活对象。
+- [`l0/inventory_report.md`](./l0/inventory_report.md) — 清洗后家底盘点：146 个 D1 路由键、62% 有恢复方案、
+  30/146（约 21%）只读自动化候选、18 个 P0/P1 首批审核对象。
 - [`l0/sop_kb.json`](./l0/sop_kb.json) — 从《故障与措施》解析出的结构化 SOP 库（`status=candidate`，
   恢复步骤按 action_type 分类；Bearer/JWT 已脱敏）。
 - [`l0/build_sop_kb.py`](./l0/build_sop_kb.py) — 解析脚本。
+- [`l0/clean_sop_kb.py`](./l0/clean_sop_kb.py) — 保守清洗与质量闸门：合并被换行切碎的步骤、重算
+  completeness、补充 token 脱敏，并在 `(system,error_code)` 冲突时拒绝静默落盘。
+- [`l0/quality_report.md`](./l0/quality_report.md) — 当前数据的阻断项与人工复核队列。
+
+在仓库根目录复查当前 KB：
+
+```bash
+python3 docs/intelligent-troubleshooting/l0/clean_sop_kb.py \
+  --report docs/intelligent-troubleshooting/l0/quality_report.md
+```
+
+清洗器默认只报告；只要存在路由冲突或疑似丢字符，传 `--output` 也会拒绝写结构化结果。源表恢复后可用
+`python3 docs/intelligent-troubleshooting/l0/build_sop_kb.py /path/to/f.xlsx --quality-report /tmp/sop-quality.md`
+重新生成并通过同一质量闸门。
 
 ## 当前状态
 
 架构已收敛（v0.3，D1–D6 已锁定）。L0 知识底座已启动。
-下一步：审核候选条目 → 给 `903001` 补 `evidence_dql`/`anomaly_criteria` → 接观测云真实取证 →
-建历史回归集接影子模式。仍待攻坚（知识与运营侧，随 L0 推进）：知识资产补全、审核 SLA。
+清洗/质量闸门已落地，当前发现 3 个路由键对应多个业务上下文，且旧解析器已造成 103 处疑似
+字符丢失（IP / 组件版本 / 联系人手机号 / `limit`、`skip` 调用），需 owner 裁决并回源表恢复；工具默认拒绝把
+带阻断项的结构化结果覆盖 canonical KB。下一步：处理质量报告阻断项 → 审核候选条目 → 给 `903001` 补
+`evidence_dql`/`anomaly_criteria` → 接观测云真实取证 → 建历史回归集接影子模式。

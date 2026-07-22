@@ -1,7 +1,8 @@
 # 交接 / 会话记忆 —— IT 智能排障系统
 
 > 本文件是一次完整设计会话的记忆快照，供**本地 Claude 无缝接续**。读完这份 + `architecture-blueprint.html`
-> 就能掌握全部决策与现状。分支：`claude/session-moz2pc`。
+> 就能掌握全部决策与现状。原会话分支 `claude/session-moz2pc` 已合入 `zhinengpaizhang-dev`；后续以用户
+> 当前明确选择的分支为准。
 
 ---
 
@@ -43,7 +44,8 @@
 
 ## 四、主要矛盾（务必记住）
 
-**系统天花板 = 知识质量，不是技术。** L0 家底盘点实测：146 错误码，60% 有恢复方案，**~32% 可自动化候选**，
+**系统天花板 = 知识质量，不是技术。** L0 清洗后按 D1 唯一路由键重算：146 个键，62% 有恢复方案，
+仅 **30/146 · 约 21%** 含明确只读自动化步骤（旧 32% 口径误计了部分写操作/未知动作），且仍有质量阻断；
 `evidence_dql`/`anomaly_criteria` 几乎全为空。所以**不承诺"上线即全自动"**，走"先证明、逐格放权、越用越全"。
 补齐是**持久战**：高频优先、和放权阶梯咬合。
 
@@ -64,36 +66,49 @@ docs/intelligent-troubleshooting/
     ├── sop_kb.json               # 146 错误码结构化 SOP 库（脱敏，status=candidate）
     ├── inventory_report.md       # 家底盘点
     ├── build_sop_kb.py           # 解析脚本（需源表 f.xlsx，未入库，见下）
+    ├── clean_sop_kb.py           # 保守清洗、脱敏、质量闸门 CLI
+    ├── quality_report.md         # 当前阻断项与人工复核队列
     └── activated/903001.md       # 首个取证草案（evidence_dql+anomaly_criteria，待联调核实）
 ```
 - **原型均单文件零依赖**，浏览器直接打开。（本会话环境 Artifact 在线发布被拦，故走 git + 文件推送。）
 - **方法论 skills** 已装在 `.claude/skills/`（qiushi-skill：矛盾分析/调查研究/批评与自我批评等，下个会话可 `/` 调用）。
+- **L0 清洗/质量闸门已补齐**：旧解析器会误把 IP、`.limit(10)` / `.skip(0)` 中的数字当步骤号，
+  新解析器已用回归测试锁住“不丢字符”；当前 KB 中的 4 处残余 token 形态已再次脱敏。
+- **当前数据阻断**：`101014`、`101034`、`101040` 在拆分多码单元格后均对应多个业务上下文，
+  与 D1 `(system,error_code)` 唯一路由前提冲突；另有 103 处疑似被旧解析器截断的 IP、组件版本、
+  联系人手机号、`limit/skip` 调用。清洗器把两类问题都设为阻断并拒绝自动落盘，详见 `quality_report.md`。
 
 ---
 
 ## 六、下一步（❗需内网/人力，沙箱做不了）
 
 1. **争取内网联调环境** → 核实 `903001.md` 里 `«待核实»` 的观测云数据源/字段名与查询延迟。
-2. **审核 sop_kb.json** → 各系统 owner 过一遍；合并被换行切碎的 recovery_steps、补 level/scenario。
+2. **审核 sop_kb.json** → 先裁决质量报告中的 3 个路由键冲突，再由各系统 owner 补 level/scenario；
+   recovery_steps 已可由清洗器保守合并（拆码前 683 → 483；拆码后候选共 500 个步骤），阻断项未解决前
+   不覆盖 canonical KB。
 3. **给 903001 补好 evidence_dql/anomaly_criteria** → 走通 L0→L1 竖线 → 建 20–30 条历史回归集 → 接影子模式。
 4. **把覆盖率/可自动化率纳入考核** → 驱动知识补全。
 
 ## 本地 Claude 可直接继续的活（不需内网）
 
 - 把 `903001.md` 的模式**复制到其他高频码**（901002 微信 / 2000001 渠道 / 801008 主数据…backlog 见 inventory_report）。
-- 写 **sop_kb.json 清洗脚本**（合并被切碎的步骤、规整字段）。
+- 用 owner 结论处理 `quality_report.md` 的 3 个 `KEY_COLLISION`，再执行结构化清洗落库。
 - 起草 **orchestrator 骨架**（LangGraph 推荐；三约束：LLM base_url 指向 MetaClaw / 结构化输出+校验 / human-in-the-loop + MCP）。
 - 起草 **观测云 MCP server** 与 **SOP 查询 MCP server** 的接口定义。
 
 ## ⚠️ 敏感数据说明
 
 源表《故障与措施》xlsx **含真实 Bearer/JWT token、内网 IP、人名**，**未入库**（`f.xlsx` 在用户本地）。
-`sop_kb.json` 已脱敏（token→`<BEARER_TOKEN>`，IP/人名保留）。**若把源表纳入版本管理，务必先脱敏 token。**
+`sop_kb.json` 已脱敏（Bearer/JWT→`<BEARER_TOKEN>`，查询/JSON token→`<TOKEN>`，IP/人名保留）。
+**若把源表纳入版本管理，务必先脱敏 token。** 已进入 Git 历史的旧快照仍可能保留本次修复前的 token，
+如确认属于有效凭证，应立即轮换；未经明确授权不要擅自改写 Git 历史。
 
 ---
 
 ## 七、工作纪律（沿用）
 
-- 开发都在分支 `claude/session-moz2pc`；提交信息末尾带 Co-Authored-By 与 Claude-Session trailer。
+- 旧开发分支 `claude/session-moz2pc` 已合入 `zhinengpaizhang-dev`；不要依据旧快照擅自切回，
+  以后以用户当前明确选择的分支为准。
+- 新提交沿用仓库现有提交说明约定；不要冒用并未参与本轮工作的 Co-Authored-By 身份。
 - 不擅自开 PR。
 - 改蓝图注意 §编号连续（当前 01–15）；改完可用 git 提交，浏览器验证渲染。
