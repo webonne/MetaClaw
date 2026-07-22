@@ -1,0 +1,642 @@
+<title>智能排障 · 故障上下文 · 交互原型</title>
+<style>
+  :root{
+    --paper:#EDF0F3; --surface:#FFFFFF; --surface-2:#F1F4F7; --surface-3:#E7EBEF;
+    --ink:#0F1620; --ink-2:#33404E; --muted:#5B6672; --faint:#8895A2;
+    --line:#DDE2E8; --line-strong:#C7CFD8;
+    --accent:#0E8A8F; --accent-soft:#DCEFEF; --accent-ink:#0A6F73;
+    --p0:#CF3B3B; --p0-soft:#FBE7E7; --p1:#C9741E; --p1-soft:#FBEEDD;
+    --p2:#B8971F; --p3:#5E7A94;
+    --ok:#2E7D5B; --ok-soft:#E1F0E8; --warn:#C9741E; --warn-soft:#FBEEDD; --crit:#CF3B3B; --crit-soft:#FBE7E7;
+    --contact:#4E63C4; --contact-soft:#E7EAF8;
+    --shadow:0 1px 2px rgba(15,22,32,.06),0 10px 28px rgba(15,22,32,.07);
+    --shadow-sm:0 1px 2px rgba(15,22,32,.06);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#0A0F14; --surface:#121A22; --surface-2:#0E151C; --surface-3:#1B2530;
+      --ink:#E7ECF1; --ink-2:#C2CCD6; --muted:#8B98A6; --faint:#5F6D7B;
+      --line:#212C36; --line-strong:#33424E;
+      --accent:#2FB6BB; --accent-soft:#0F2C2D; --accent-ink:#5FD0D4;
+      --p0:#E4655F; --p0-soft:#2A1615; --p1:#DF9A4F; --p1-soft:#241A0F;
+      --p2:#D3B24A; --p3:#7C97AC;
+      --ok:#4FB587; --ok-soft:#10241B; --warn:#DF9A4F; --warn-soft:#241A0F; --crit:#E4655F; --crit-soft:#2A1615;
+      --contact:#8B97E6; --contact-soft:#191C30;
+      --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.45);
+      --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0A0F14; --surface:#121A22; --surface-2:#0E151C; --surface-3:#1B2530;
+    --ink:#E7ECF1; --ink-2:#C2CCD6; --muted:#8B98A6; --faint:#5F6D7B;
+    --line:#212C36; --line-strong:#33424E;
+    --accent:#2FB6BB; --accent-soft:#0F2C2D; --accent-ink:#5FD0D4;
+    --p0:#E4655F; --p0-soft:#2A1615; --p1:#DF9A4F; --p1-soft:#241A0F;
+    --p2:#D3B24A; --p3:#7C97AC;
+    --ok:#4FB587; --ok-soft:#10241B; --warn:#DF9A4F; --warn-soft:#241A0F; --crit:#E4655F; --crit-soft:#2A1615;
+    --contact:#8B97E6; --contact-soft:#191C30;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.45);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  }
+  :root[data-theme="light"]{
+    --paper:#EDF0F3; --surface:#FFFFFF; --surface-2:#F1F4F7; --surface-3:#E7EBEF;
+    --ink:#0F1620; --ink-2:#33404E; --muted:#5B6672; --faint:#8895A2;
+    --line:#DDE2E8; --line-strong:#C7CFD8;
+    --accent:#0E8A8F; --accent-soft:#DCEFEF; --accent-ink:#0A6F73;
+    --p0:#CF3B3B; --p0-soft:#FBE7E7; --p1:#C9741E; --p1-soft:#FBEEDD;
+    --p2:#B8971F; --p3:#5E7A94;
+    --ok:#2E7D5B; --ok-soft:#E1F0E8; --warn:#C9741E; --warn-soft:#FBEEDD; --crit:#CF3B3B; --crit-soft:#FBE7E7;
+    --contact:#4E63C4; --contact-soft:#E7EAF8;
+    --shadow:0 1px 2px rgba(15,22,32,.06),0 10px 28px rgba(15,22,32,.07);
+    --shadow-sm:0 1px 2px rgba(15,22,32,.06);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6;
+    font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 20px 90px}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  button{font-family:inherit;cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  /* page intro */
+  .intro{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:6px}
+  .intro h1{font-size:19px;font-weight:720;letter-spacing:-.3px;margin:0}
+  .intro .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;border:1px solid var(--accent);border-radius:5px;padding:1px 7px}
+  .intro p{width:100%;margin:2px 0 0;color:var(--muted);font-size:13.5px}
+  .lane{display:flex;align-items:center;gap:8px;margin:22px 0 10px;font-family:var(--mono);
+    font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .lane::after{content:"";flex:1;height:1px;background:var(--line)}
+  .lane b{color:var(--accent)}
+
+  /* ---- IM card ---- */
+  .im{display:flex;gap:12px;align-items:flex-start;max-width:560px}
+  .im .bot{width:38px;height:38px;border-radius:10px;background:var(--accent);color:#fff;flex:none;
+    display:grid;place-items:center;font-size:19px;box-shadow:var(--shadow-sm)}
+  .bubble{background:var(--surface);border:1px solid var(--line);border-radius:4px 14px 14px 14px;
+    box-shadow:var(--shadow);overflow:hidden;flex:1}
+  .bubble .top{padding:12px 15px 10px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .bubble .bot-name{font-weight:680;font-size:13.5px}
+  .bubble .top .t{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint)}
+  .bubble .body{padding:13px 15px}
+  .bubble .headline{font-weight:680;font-size:14.5px;margin:0 0 8px;line-height:1.5}
+  .bubble .kv{font-size:12.5px;color:var(--muted);display:grid;gap:3px;margin-bottom:11px}
+  .bubble .kv b{color:var(--ink-2);font-weight:600}
+  .bubble .ev-mini{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:4px;margin-bottom:12px}
+  .bubble .ev-mini .row{display:flex;gap:8px;align-items:center}
+  .bubble .btns{display:flex;gap:8px;flex-wrap:wrap}
+
+  .btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:8px;
+    padding:7px 13px;font-size:13px;font-weight:600;transition:.13s;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.pri:hover{filter:brightness(1.06);color:#fff}
+  .btn.danger{background:var(--crit);border-color:var(--crit);color:#fff}
+  .btn.danger:hover{filter:brightness(1.05);color:#fff}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:4px 10px;font-size:12px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  /* ---- console ---- */
+  .console{background:var(--surface-2);border:1px solid var(--line-strong);border-radius:16px;
+    box-shadow:var(--shadow);overflow:hidden;transition:box-shadow .3s,outline .3s;outline:0 solid transparent}
+  .console.flash{outline:3px solid var(--accent);outline-offset:2px}
+
+  /* incident header */
+  .ihead{position:relative;padding:16px 20px 15px;background:var(--surface);border-bottom:1px solid var(--line)}
+  .ihead::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--p0)}
+  .ihead .row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .sev{font-family:var(--mono);font-weight:800;font-size:12px;letter-spacing:.04em;color:#fff;background:var(--p0);
+    border-radius:6px;padding:3px 9px}
+  .ihead h2{font-size:17px;font-weight:720;margin:0;letter-spacing:-.2px}
+  .ecode{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);background:var(--accent-soft);
+    border-radius:6px;padding:2px 8px}
+  .status{margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:700;border-radius:20px;padding:3px 12px;
+    border:1px solid var(--line-strong);color:var(--muted);background:var(--surface-2);white-space:nowrap;transition:.2s}
+  .status.diagnosing{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .status.confirmed{color:var(--ok);background:var(--ok-soft);border-color:transparent}
+  .status.closed{color:var(--muted);background:var(--surface-3);border-color:transparent}
+  .ihead .row2{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:11px;font-size:12.5px;color:var(--muted)}
+  .ihead .row2 span b{color:var(--ink-2);font-weight:600}
+  .sla{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-weight:700;font-size:12.5px;
+    color:var(--p0);background:var(--p0-soft);border-radius:7px;padding:3px 10px}
+  .sla .pulse{width:7px;height:7px;border-radius:50%;background:var(--p0);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* degrade banner */
+  .degrade-banner{display:none;align-items:center;gap:10px;padding:9px 20px;background:var(--warn-soft);
+    border-bottom:1px solid color-mix(in srgb,var(--warn) 40%,transparent);font-size:12.5px;color:var(--ink-2)}
+  .degrade-banner.on{display:flex}
+  .degrade-banner b{color:var(--warn)}
+
+  /* body grid */
+  .cbody{display:grid;gap:1px;background:var(--line);grid-template-columns:1fr 1fr}
+  @media(max-width:760px){.cbody{grid-template-columns:1fr}}
+  .panel{background:var(--surface-2);padding:16px 18px}
+  .panel h3{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;
+    font-family:var(--mono);margin:0 0 13px;display:flex;align-items:center;gap:8px}
+  .panel h3 .cnt{color:var(--muted);background:var(--surface-3);border-radius:10px;padding:0 7px;font-size:11px}
+
+  /* conclusion */
+  .concl{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:14px 15px;margin-bottom:14px}
+  .concl .cause{font-size:15px;font-weight:680;line-height:1.5;margin:0 0 4px}
+  .concl .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-top:8px}
+  .conf{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--ok)}
+  .conf .bars{display:inline-flex;gap:2px}
+  .conf .bars i{width:4px;height:12px;border-radius:1px;background:var(--ok)}
+  .conf .bars i.off{background:var(--line-strong)}
+  .ttype{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--contact);background:var(--contact-soft);
+    border-radius:5px;padding:1px 7px}
+
+  /* recommended path steps (tiered) */
+  .steps{display:grid;gap:9px}
+  .rstep{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+  .rstep .tier{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+    border-radius:5px;padding:2px 6px;white-space:nowrap;align-self:start;margin-top:2px}
+  .t-auto{color:var(--muted);background:var(--surface-3)}
+  .t-contact{color:var(--contact);background:var(--contact-soft)}
+  .t-write{color:var(--crit);background:var(--crit-soft)}
+  .rstep .txt{font-size:13.5px;line-height:1.45}
+  .rstep .txt .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .rstep .txt code{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:4px;padding:0 4px}
+  .rstep.done{opacity:.72}
+  .rstep.done .txt{text-decoration:none}
+  .doneflag{font-family:var(--mono);font-size:11px;color:var(--ok);font-weight:700;white-space:nowrap}
+
+  /* evidence board */
+  .ev{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:9px;overflow:hidden}
+  .ev .evh{display:grid;grid-template-columns:auto 1fr auto auto;gap:11px;align-items:center;padding:11px 13px;
+    cursor:pointer;transition:background .13s}
+  .ev .evh:hover{background:var(--surface-2)}
+  .ev .flag{width:9px;height:9px;border-radius:50%;flex:none}
+  .flag.anom{background:var(--crit)} .flag.warn2{background:var(--warn)} .flag.ok{background:var(--ok)}
+  .ev .ns{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent)}
+  .ev .desc{font-size:13px}
+  .ev .verdict{font-family:var(--mono);font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;white-space:nowrap}
+  .verdict.anom{color:var(--crit);background:var(--crit-soft)}
+  .verdict.warn2{color:var(--warn);background:var(--warn-soft)}
+  .verdict.ok{color:var(--ok);background:var(--ok-soft)}
+  .ev .chev{color:var(--faint);font-size:12px;transition:transform .18s;font-family:var(--mono)}
+  .ev.open .chev{transform:rotate(90deg)}
+  .ev .evbody{display:none;padding:0 13px 13px;border-top:1px dashed var(--line)}
+  .ev.open .evbody{display:block}
+  .ev .evbody .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--faint);font-weight:700;margin:11px 0 5px}
+  pre{font-family:var(--mono);font-size:11.5px;line-height:1.55;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:8px;padding:11px 12px;overflow-x:auto;margin:0;color:var(--ink-2)}
+  pre .kw{color:var(--accent);font-weight:700} pre .st{color:var(--ok)} pre .cm{color:var(--faint)}
+  .ev .degnote{display:none;font-size:12px;color:var(--warn);background:var(--warn-soft);border-radius:7px;
+    padding:8px 10px;margin-top:10px}
+  body.degraded .ev .degnote{display:block}
+  body.degraded .ev .evbody pre{opacity:.4}
+  body.degraded .ev .verdict{opacity:.4}
+  body.degraded .ev .flag{background:var(--faint)!important}
+
+  /* timeline */
+  .tl-wrap{background:var(--surface);border-top:1px solid var(--line)}
+  .tl-head{display:flex;align-items:center;gap:10px;padding:12px 20px;cursor:pointer}
+  .tl-head h3{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;
+    font-family:var(--mono);margin:0}
+  .tl-head .chev{margin-left:auto;color:var(--faint);font-family:var(--mono);transition:transform .18s}
+  .tl-wrap.open .tl-head .chev{transform:rotate(90deg)}
+  .tl-body{display:none;padding:2px 20px 18px}
+  .tl-wrap.open .tl-body{display:block}
+  .tl{list-style:none;margin:0;padding:0;position:relative}
+  .tl::before{content:"";position:absolute;left:6px;top:5px;bottom:8px;width:2px;background:var(--line)}
+  .tl li{position:relative;padding:5px 0 5px 26px;font-size:13px}
+  .tl li .dot{position:absolute;left:0;top:9px;width:14px;height:14px;border-radius:50%;background:var(--surface);
+    border:2px solid var(--accent)}
+  .tl li.done .dot{background:var(--accent)}
+  .tl li.pending .dot{border-color:var(--line-strong)}
+  .tl li.now .dot{border-color:var(--p0);box-shadow:0 0 0 4px var(--p0-soft)}
+  .tl li .tt{font-family:var(--mono);font-size:11px;color:var(--faint);margin-right:8px}
+  .tl li .who{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-left:6px}
+  .tl li.pending{color:var(--muted)}
+
+  /* action bar */
+  .abar{position:sticky;bottom:0;display:flex;gap:9px;flex-wrap:wrap;align-items:center;padding:12px 20px;
+    background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(15,22,32,.05)}
+  .abar .spacer{flex:1}
+  .toggle{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+  .switch{width:34px;height:19px;border-radius:20px;background:var(--line-strong);position:relative;transition:.18s;flex:none}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:.18s}
+  .toggle.on .switch{background:var(--warn)}
+  .toggle.on .switch::after{transform:translateX(15px)}
+
+  /* modal + slide panel */
+  .overlay{position:fixed;inset:0;background:rgba(6,10,14,.5);backdrop-filter:blur(2px);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:50}
+  .overlay.on{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow);
+    max-width:440px;width:100%;padding:22px;animation:pop .16s ease-out}
+  @keyframes pop{from{transform:scale(.97);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal h4{margin:0 0 6px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:9px}
+  .modal .warnico{width:26px;height:26px;border-radius:7px;background:var(--crit-soft);color:var(--crit);
+    display:grid;place-items:center;font-size:15px;flex:none}
+  .modal p{margin:0 0 6px;font-size:13.5px;color:var(--ink-2)}
+  .modal .detail{font-family:var(--mono);font-size:12px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:9px;padding:11px 12px;margin:12px 0;color:var(--ink-2);line-height:1.6}
+  .modal .foot{display:flex;gap:9px;justify-content:flex-end;margin-top:18px}
+  .modal label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;font-weight:600}
+  .modal textarea,.modal input{width:100%;font-family:var(--sans);font-size:13px;color:var(--ink);
+    background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;resize:vertical}
+  .handoff{display:grid;gap:7px;margin:12px 0}
+  .handoff .hrow{display:flex;gap:9px;font-size:12.5px;font-family:var(--mono);align-items:baseline}
+  .handoff .hrow .k{color:var(--faint);min-width:82px}
+  .handoff .hrow .v{color:var(--ink-2)}
+  .handoff .chk{color:var(--ok);font-weight:700}
+
+  /* toast */
+  #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;
+    gap:8px;z-index:60;align-items:center;pointer-events:none}
+  .toast{background:var(--ink);color:var(--surface);font-size:13px;font-weight:500;padding:10px 16px;border-radius:10px;
+    box-shadow:var(--shadow);display:flex;align-items:center;gap:9px;animation:tin .2s ease-out}
+  .toast .ic{color:var(--ok)}
+  @keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  .foot-note{margin-top:20px;font-family:var(--mono);font-size:11px;color:var(--faint);text-align:center}
+</style>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>智能排障 · 故障上下文</h1>
+    <span class="tag">交互原型</span>
+    <p>可点击原型 · 数据取自真实故障 <span class="mono">903001 数据库访问异常</span>（csdp-wechat）。证据可展开、动作可执行、写操作二次确认——全部真能点。</p>
+  </div>
+
+  <!-- IM card -->
+  <div class="lane">① 告警瞬间 · <b>IM 卡片</b>（诊断结论对象的精简渲染）</div>
+  <div class="im">
+    <div class="bot">🩺</div>
+    <div class="bubble">
+      <div class="top">
+        <span class="bot-name">排障助手</span>
+        <span class="sev" style="font-size:10px;padding:2px 7px">P0</span>
+        <span class="t mono">14:18:07</span>
+      </div>
+      <div class="body">
+        <p class="headline">csdp-wechat 数据库访问异常，小程序对所有客户不可用</p>
+        <div class="kv">
+          <span><b>错误码</b> <span class="mono">903001</span> · 依赖异常 · 已命中 SOP</span>
+          <span><b>根因假设</b> MongoDB 实例不可用（连接数打满）· 置信度 高</span>
+        </div>
+        <div class="ev-mini">
+          <div class="row"><span class="flag anom" style="width:8px;height:8px;border-radius:50%"></span> L:: 日志 error_code=903001 · 命中 47 条</div>
+          <div class="row"><span class="flag anom" style="width:8px;height:8px;border-radius:50%"></span> M:: mongo 连接数 982/1000 · 接近上限</div>
+          <div class="row"><span class="flag warn2" style="width:8px;height:8px;border-radius:50%;background:var(--warn)"></span> T:: 链路 第 3 跳 mongo 超时</div>
+        </div>
+        <div class="btns">
+          <button class="btn pri sm" onclick="gotoConsole()">看详情 →</button>
+          <button class="btn sm" onclick="toast('已确认结论，记入处置记录')">确认</button>
+          <button class="btn sm" onclick="toast('已发起结构化转派草稿')">转派</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Web console -->
+  <div class="lane">② 深度排查 · <b>故障上下文 Web 台</b>（同一对象的完整渲染 · 可审计）</div>
+  <div class="console" id="console">
+    <!-- header -->
+    <div class="ihead">
+      <div class="row1">
+        <span class="sev">P0</span>
+        <h2>csdp-wechat · 数据库访问异常</h2>
+        <span class="ecode">903001</span>
+        <span class="status diagnosing" id="statusPill">诊断中</span>
+      </div>
+      <div class="row2">
+        <span class="sla"><span class="pulse"></span>SLA 剩余 <span id="sla" class="mono">14:31</span></span>
+        <span><b>影响</b> 所有客户 · 小程序不可用</span>
+        <span><b>类型</b> 依赖异常</span>
+        <span><b>trace_id</b> <span class="mono">a7f3e9c2-4b81</span></span>
+        <span><b>system</b> <span class="mono">csdp</span></span>
+      </div>
+    </div>
+
+    <div class="degrade-banner" id="degradeBanner">
+      <b>⚠ 观测云降级</b> 取证接口超时，证据未自动确认——请按 SOP 人工取证，结论置信度已下调。
+    </div>
+
+    <div class="cbody">
+      <!-- conclusion + path -->
+      <div class="panel">
+        <h3>诊断结论</h3>
+        <div class="concl">
+          <p class="cause">MongoDB 实例（10.6.104.169）连接数打满，csdp-wechat 无法访问数据库</p>
+          <div class="meta">
+            <span class="conf" id="confBox"><span class="bars"><i></i><i></i><i></i><i class="off"></i></span> 置信度 高</span>
+            <span class="ttype">依赖异常 · 中间件</span>
+            <span>命中公共层 SOP：<span class="mono">mongo/conn-exhausted</span></span>
+          </div>
+        </div>
+        <h3 style="margin-top:4px">推荐路径 · 恢复动作三分级</h3>
+        <div class="steps">
+          <div class="rstep done">
+            <span class="tier t-auto">自动 · 只读</span>
+            <div class="txt">已自动拉取 Mongo 指标与错误日志<div class="sub">4 条 DQL，3 项判定异常</div></div>
+            <span class="doneflag">✓ 已完成</span>
+          </div>
+          <div class="rstep">
+            <span class="tier t-contact">联系 · 找人</span>
+            <div class="txt">联系 <b>树朝（DBA）</b>处理数据库<div class="sub">实例 <code>10.6.104.169</code> · 重启 MongoDB</div></div>
+            <button class="btn sm" onclick="toast('已在故障群 @树朝(DBA)，并附带上下文','ic')">@ 通知</button>
+          </div>
+          <div class="rstep">
+            <span class="tier t-write">写操作 · 需确认</span>
+            <div class="txt">重启 MongoDB 实例<div class="sub">参考《中间件 Mongodb 恢复方案》</div></div>
+            <button class="btn danger sm" onclick="openWrite()">待确认 ⚠</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- evidence -->
+      <div class="panel">
+        <h3>证据看板 <span class="cnt">4 项 · 3 异常</span></h3>
+
+        <div class="ev open">
+          <div class="evh" onclick="toggleEv(this)">
+            <span class="flag anom"></span>
+            <span><span class="ns">L::</span> <span class="desc">错误日志 error_code=903001</span></span>
+            <span class="verdict anom">异常 · 47 条</span>
+            <span class="chev">▸</span>
+          </div>
+          <div class="evbody">
+            <div class="lbl">执行的 DQL</div>
+            <pre><span class="kw">L::</span>csdp_log:(error_code,trace_id,error_msg,occur_time)
+   { service=<span class="st">'csdp-wechat'</span>, error_code=<span class="st">'903001'</span> } [14:13–14:18]</pre>
+            <div class="lbl">返回样本（1/47）</div>
+            <pre>{ <span class="cm">"error_code"</span>:<span class="st">"903001"</span>, <span class="cm">"error_level"</span>:<span class="st">"ERROR"</span>,
+  <span class="cm">"error_msg"</span>:<span class="st">"数据库访问异常: mongo 连接获取超时"</span>,
+  <span class="cm">"trace_id"</span>:<span class="st">"a7f3e9c2-4b81"</span>,
+  <span class="cm">"source"</span>:<span class="st">"[db.go:214] [Mongo.Acquire]"</span>,
+  <span class="cm">"occur_time"</span>:<span class="st">"2026-07-21 14:18:01"</span> }</pre>
+            <div class="degnote">⚠ 观测云降级：该证据未自动确认，请登录观测云人工核对。</div>
+          </div>
+        </div>
+
+        <div class="ev">
+          <div class="evh" onclick="toggleEv(this)">
+            <span class="flag anom"></span>
+            <span><span class="ns">M::</span> <span class="desc">Mongo 连接数</span></span>
+            <span class="verdict anom">982 / 1000</span>
+            <span class="chev">▸</span>
+          </div>
+          <div class="evbody">
+            <div class="lbl">执行的 DQL</div>
+            <pre><span class="kw">M::</span>mongodb:(connections,slow_queries,disk_used)
+   { host=<span class="st">'10.6.104.169'</span> } [14:13–14:18]</pre>
+            <div class="lbl">判据 anomaly_criteria</div>
+            <pre>connections / max &gt; 0.9  →  <span class="st">异常</span>   (当前 0.98)</pre>
+            <div class="degnote">⚠ 观测云降级：该证据未自动确认，请登录观测云人工核对。</div>
+          </div>
+        </div>
+
+        <div class="ev">
+          <div class="evh" onclick="toggleEv(this)">
+            <span class="flag warn2"></span>
+            <span><span class="ns">M::</span> <span class="desc">Mongo 慢查询</span></span>
+            <span class="verdict warn2">激增 · 关注</span>
+            <span class="chev">▸</span>
+          </div>
+          <div class="evbody">
+            <div class="lbl">执行的 DQL</div>
+            <pre><span class="kw">M::</span>mongodb:(slow_queries) { host=<span class="st">'10.6.104.169'</span> } [14:13–14:18] BY op</pre>
+            <div class="degnote">⚠ 观测云降级：该证据未自动确认，请登录观测云人工核对。</div>
+          </div>
+        </div>
+
+        <div class="ev">
+          <div class="evh" onclick="toggleEv(this)">
+            <span class="flag anom"></span>
+            <span><span class="ns">T::</span> <span class="desc">调用链 · 第 3 跳</span></span>
+            <span class="verdict anom">mongo 超时</span>
+            <span class="chev">▸</span>
+          </div>
+          <div class="evbody">
+            <div class="lbl">执行的 DQL</div>
+            <pre><span class="kw">T::</span>tracing:(service,duration,status)
+   { trace_id=<span class="st">'a7f3e9c2-4b81'</span> } ORDER BY time</pre>
+            <div class="lbl">链路</div>
+            <pre>wechat-api → workorder-svc → <span class="st">mongo(10.6.104.169) 超时 5001ms ✗</span></pre>
+            <div class="degnote">⚠ 观测云降级：该证据未自动确认，请登录观测云人工核对。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- timeline -->
+    <div class="tl-wrap open" id="tlWrap">
+      <div class="tl-head" onclick="document.getElementById('tlWrap').classList.toggle('open')">
+        <h3>处置时间线</h3>
+        <span class="mono" style="font-size:11px;color:var(--faint)">自动留痕 · 可审计</span>
+        <span class="chev">▸</span>
+      </div>
+      <div class="tl-body">
+        <ul class="tl" id="timeline">
+          <li class="done"><span class="dot"></span><span class="tt">14:18:02</span>告警触发<span class="who">观测云 webhook</span></li>
+          <li class="done"><span class="dot"></span><span class="tt">14:18:03</span>标准化为故障上下文<span class="who">系统</span></li>
+          <li class="done"><span class="dot"></span><span class="tt">14:18:03</span>路由命中 (csdp, 903001)<span class="who">系统 · 确定性</span></li>
+          <li class="done"><span class="dot"></span><span class="tt">14:18:05</span>自动取证 4 条 DQL，3 异常<span class="who">观测云</span></li>
+          <li class="now"><span class="dot"></span><span class="tt">14:18:07</span>生成诊断结论，置信度 高<span class="who">LLM</span></li>
+          <li class="pending"><span class="dot"></span><span class="tt">— —:—</span>等待人工确认 / 处置</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- action bar -->
+    <div class="abar">
+      <button class="btn pri" id="confirmBtn" onclick="confirmConcl()">确认结论</button>
+      <button class="btn" onclick="openTransfer()">转派 DBA</button>
+      <button class="btn danger" onclick="openWrite()">执行写操作</button>
+      <button class="btn ghost" onclick="openClose()">关闭并沉淀</button>
+      <span class="spacer"></span>
+      <span class="toggle" id="degToggle" onclick="toggleDegrade()" title="模拟观测云取证接口超时">
+        <span class="switch"></span>模拟观测云降级
+      </span>
+    </div>
+  </div>
+
+  <div class="foot-note">交互原型 · 非真实系统 · 所有动作仅演示前端反馈与留痕</div>
+</div>
+
+<!-- overlay host -->
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div id="toasts"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const overlay = $('#overlay'), modal = $('#modal');
+
+  // toast
+  window.toast = function(msg, ic){
+    const t = document.createElement('div'); t.className='toast';
+    t.innerHTML = (ic?'<span class="ic">✓</span>':'') + '<span>'+msg+'</span>';
+    $('#toasts').appendChild(t);
+    setTimeout(()=>{ t.style.transition='.3s'; t.style.opacity='0'; t.style.transform='translateY(6px)';
+      setTimeout(()=>t.remove(),300); }, 2600);
+  };
+
+  // evidence expand
+  window.toggleEv = el => el.closest('.ev').classList.toggle('open');
+
+  // goto console
+  window.gotoConsole = function(){
+    const c = $('#console'); c.scrollIntoView({behavior:'smooth', block:'start'});
+    c.classList.add('flash'); setTimeout(()=>c.classList.remove('flash'), 1200);
+  };
+
+  // timeline append
+  function logTL(time, text, who, cls){
+    const ul = $('#timeline');
+    const pending = ul.querySelector('li.pending');
+    const li = document.createElement('li');
+    li.className = 'done'+(cls?(' '+cls):'');
+    li.innerHTML = '<span class="dot"></span><span class="tt">'+time+'</span>'+text+(who?'<span class="who">'+who+'</span>':'');
+    ul.insertBefore(li, pending);
+  }
+  function nowStr(){ const d=new Date(); const p=n=>String(n).padStart(2,'0');
+    return '14:'+p(19+ (tick%9))+':'+p((d.getSeconds())); }
+
+  // SLA countdown
+  let sec = 14*60+31;
+  const slaEl = $('#sla');
+  let tick = 0;
+  const timer = setInterval(()=>{
+    sec--; tick++;
+    if(sec<0){ clearInterval(timer); return; }
+    const m=Math.floor(sec/60), s=sec%60;
+    slaEl.textContent = m+':'+String(s).padStart(2,'0');
+    if(sec<10*60){ slaEl.parentElement.style.filter='none'; }
+  }, 1000);
+
+  // confirm conclusion
+  let confirmed=false;
+  window.confirmConcl = function(){
+    if(confirmed){ toast('结论已确认'); return; }
+    confirmed=true;
+    const pill=$('#statusPill'); pill.className='status confirmed'; pill.textContent='已确认';
+    $('#confirmBtn').textContent='已确认结论'; $('#confirmBtn').disabled=true;
+    logTL('14:18:24','一线确认诊断结论','当班 · 人工');
+    toast('已确认结论，并记入处置时间线','ic');
+  };
+
+  // write op modal (manual_write → 二次确认)
+  window.openWrite = function(){
+    modal.innerHTML = `
+      <h4><span class="warnico">⚠</span>确认执行写操作</h4>
+      <p>该操作会<b>重启生产 MongoDB 实例</b>，可能造成短暂连接中断。执行将自动留痕。</p>
+      <div class="detail">
+        动作　　 重启 MongoDB 实例<br>
+        目标　　 10.6.104.169<br>
+        影响面　 csdp-wechat 依赖恢复<br>
+        依据　　 SOP mongo/conn-exhausted
+      </div>
+      <label>确认原因（记入审计）</label>
+      <textarea rows="2" id="wrReason" placeholder="例：连接数打满且慢查询激增，确认需重启释放连接池"></textarea>
+      <div class="foot">
+        <button class="btn ghost" onclick="closeOverlay()">取消</button>
+        <button class="btn danger" onclick="doWrite()">确认执行</button>
+      </div>`;
+    openOverlay();
+  };
+  window.doWrite = function(){
+    const r = ($('#wrReason').value||'').trim();
+    closeOverlay();
+    logTL('14:18:41','执行写操作：重启 MongoDB 实例'+(r?('（'+r+'）'):''),'当班 · 人工 · 已留痕','done');
+    toast('写操作已执行并留痕','ic');
+  };
+
+  // transfer (structured handoff)
+  window.openTransfer = function(){
+    modal.innerHTML = `
+      <h4>结构化转派 · DBA 组</h4>
+      <p>整份故障上下文随工单流转，接手方无需重新排查。</p>
+      <div class="handoff">
+        <div class="hrow"><span class="k">error_code</span><span class="v">903001 · 数据库访问异常</span></div>
+        <div class="hrow"><span class="k">trace_id</span><span class="v">a7f3e9c2-4b81</span></div>
+        <div class="hrow"><span class="k">已确认证据</span><span class="v chk">✓ Mongo 连接 982/1000 · 链路第3跳超时</span></div>
+        <div class="hrow"><span class="k">已排除</span><span class="v chk">✓ 网络 / 发布变更（近1h无发布）</span></div>
+        <div class="hrow"><span class="k">建议动作</span><span class="v">重启实例 10.6.104.169</span></div>
+      </div>
+      <label>转派备注</label>
+      <input id="tfNote" placeholder="例：请优先确认是否连接泄漏">
+      <div class="foot">
+        <button class="btn ghost" onclick="closeOverlay()">取消</button>
+        <button class="btn pri" onclick="doTransfer()">转派并同步群</button>
+      </div>`;
+    openOverlay();
+  };
+  window.doTransfer = function(){
+    closeOverlay();
+    const pill=$('#statusPill'); pill.className='status'; pill.textContent='已转派 DBA';
+    logTL('14:18:33','转派 DBA 组（携带完整上下文）','当班 · 人工');
+    toast('已转派 DBA 组，上下文随工单同步','ic');
+  };
+
+  // close & sediment
+  window.openClose = function(){
+    modal.innerHTML = `
+      <h4>关闭并沉淀</h4>
+      <p>本次为<b>已知错误码</b>，处置过程将归档；可顺手修正 SOP 使其更准。</p>
+      <div class="detail">
+        命中 SOP　 mongo/conn-exhausted（公共层）<br>
+        本次耗时　 约 6 分钟（优于 P0 · 15min）<br>
+        处置结果　 重启后连接释放，服务恢复
+      </div>
+      <label>修正 / 补充 SOP（可选 · 写回知识库）</label>
+      <textarea rows="2" id="sopNote" placeholder="例：补充 anomaly_criteria — 连接数>0.9 且慢查询>基线3倍才判定，减少误报"></textarea>
+      <div class="foot">
+        <button class="btn ghost" onclick="doClose(false)">仅归档关闭</button>
+        <button class="btn pri" onclick="doClose(true)">关闭并写回 SOP</button>
+      </div>`;
+    openOverlay();
+  };
+  window.doClose = function(writeback){
+    const note = ($('#sopNote')&&$('#sopNote').value||'').trim();
+    closeOverlay();
+    const pill=$('#statusPill'); pill.className='status closed'; pill.textContent='已关闭';
+    logTL('14:24:10','关闭工单，处置过程归档','当班 · 人工');
+    if(writeback && note){ logTL('14:24:11','SOP 候选修正已提交审核','闭环 · Skill Evolver','done'); }
+    toast(writeback?'已关闭，SOP 修正进入审核队列':'已归档关闭','ic');
+    clearInterval(timer); $('#sla').textContent='—';
+    slaEl.parentElement.style.background='var(--surface-3)'; slaEl.parentElement.style.color='var(--muted)';
+    slaEl.parentElement.querySelector('.pulse').style.display='none';
+  };
+
+  // degrade toggle
+  let degraded=false;
+  window.toggleDegrade = function(){
+    degraded=!degraded;
+    document.body.classList.toggle('degraded', degraded);
+    $('#degToggle').classList.toggle('on', degraded);
+    $('#degradeBanner').classList.toggle('on', degraded);
+    const conf=$('#confBox');
+    if(degraded){
+      conf.innerHTML='<span class="bars"><i></i><i class="off"></i><i class="off"></i><i class="off"></i></span> 置信度 低（未自动确认）';
+      conf.style.color='var(--warn)';
+      toast('观测云降级：证据未自动确认，置信度下调');
+    }else{
+      conf.innerHTML='<span class="bars"><i></i><i></i><i></i><i class="off"></i></span> 置信度 高';
+      conf.style.color='var(--ok)';
+      toast('观测云已恢复，证据重新自动确认','ic');
+    }
+  };
+
+  // overlay helpers
+  function openOverlay(){ overlay.classList.add('on'); }
+  window.closeOverlay = function(){ overlay.classList.remove('on'); };
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) closeOverlay(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeOverlay(); });
+})();
+</script>
