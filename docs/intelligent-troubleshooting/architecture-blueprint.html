@@ -963,10 +963,75 @@
     </ul>
   </section>
 
-  <!-- 8 决策记录 -->
+  <!-- 12 知识运营机制 -->
   <section>
     <div class="sec-head">
       <div class="sec-num">12</div>
+      <div class="eyebrow">知识运营机制</div>
+      <h2>那 80% 空缺谁来补、怎么不饿死</h2>
+    </div>
+    <p class="sub">知识库的天花板 = 系统的天花板（主要矛盾 · 可执行 SOP 仅 ~20%）。R6 最难的不是技术，是"<b>一线凭什么花时间补 SOP</b>"——静态排障文档就死在这。所以核心不是"再找人写文档"。</p>
+
+    <h3>核心原则：让沉淀「顺手」，而非「额外负担」</h3>
+    <div class="principles" style="margin-top:14px">
+      <div class="principle"><h4>嵌进处置流程</h4><p>关闭时系统已把本次证据/动作/结论<b>预填成候选条目</b>，人只需确认/微调——把"写文档"变成"点确认"。</p></div>
+      <div class="principle"><h4>贡献者自己受益</h4><p>补了这条 SOP，下次同类故障<b>自己就省事</b>（甚至升自动档）——从"成本"变"给自己减负"。</p></div>
+      <div class="principle"><h4>专家只审核 + 兜底</h4><p>专家做审核/疑难兜底/定标，不当文档工——经验通过"审核关"沉淀。</p></div>
+    </div>
+    <p class="sub" style="margin-top:10px">本质是<b>群众路线</b>：从一线处置中来（沉淀）→ 补全后回流去帮一线（复用）。</p>
+
+    <h3>知识三来源</h3>
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>来源</th><th>是什么</th><th>靠什么机制</th></tr></thead>
+        <tbody>
+          <tr><td><b>存量挖掘</b></td><td>《故障与措施》表 + 历史工单 + 群聊 + 静态文档，一次性挖成结构化条目</td><td class="mono-c">起步地基（人工 + LLM 抽取）</td></tr>
+          <tr><td><b>增量沉淀</b></td><td>每次处置完（尤其未知异常 / 影子比对）→ 自动生成候选条目</td><td class="mono-c">Skill Evolver + candidate→promotion</td></tr>
+          <tr><td><b>主动补全 backlog</b></td><td>度量指出"哪些高频码还没 SOP / anomaly_criteria" → 排优先级补</td><td class="mono-c">数据驱动的补全队列</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>谁补、谁审、怎么激励</h3>
+    <ul class="pain" style="margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px">
+      <li><b>补</b>：处置人顺手点确认（增量）；平台团队按 backlog 主动补（存量 + 高频）。</li>
+      <li><b>审</b>：分层归属——业务层由<b>该系统 owner 团队</b>审，公共层由<b>平台/中间件团队</b>审。</li>
+      <li><b>激励</b>（没有它会饿死）：贡献看板（谁沉淀了多少<b>有效</b>条目、命中率）→ 进绩效；领导侧把<b>「覆盖率 / 可自动化率」当团队 KPI</b> 倒逼补全。</li>
+    </ul>
+
+    <h3>生命周期 + 质量反馈（SOP 会过期、会变坏）</h3>
+    <div class="callout" style="margin-top:12px">
+      <span class="mono" style="font-weight:700"><span style="color:var(--muted)">candidate 候选</span> → <span style="color:var(--ok)">approved 生效</span> → <span style="color:var(--crit)">deprecated 废弃</span></span> &nbsp;（带 version）<br>
+      <b style="color:var(--crit)">质量反馈闭环</b>：SOP 用后结果回流——"最近 N 次没解决" / "被否决纠正" → <b>自动标记复审/降级</b>（trust 章节"否决即触发复审"就是入口）。<b>过期治理</b>：凭证型步骤标为运行时引用；高频 SOP 定期复审。
+    </div>
+
+    <h3>驱动运营的度量</h3>
+    <p class="sub" style="margin-top:8px">覆盖率 · 可自动化率 · 命中率 · <b>采纳率</b> · 沉淀速度（新增/周）· 过期率 · 复审 backlog——既排补全优先级，也是激励与向上汇报依据。</p>
+
+    <h3>和已定机制的接缝</h3>
+    <div class="tbl-wrap" style="margin-top:12px">
+      <table>
+        <thead><tr><th>来源 / 触发</th><th>接到哪个机制</th></tr></thead>
+        <tbody>
+          <tr><td>结构化 KB 增长</td><td class="mono-c">candidate→promotion（复用 MetaClaw memory）</td></tr>
+          <tr><td>方法论增长</td><td class="mono-c">MetaClaw Skill Evolver</td></tr>
+          <tr><td>影子 / 回归产出"哪些码不可靠"</td><td class="mono-c">→ 补全 backlog</td></tr>
+          <tr><td>人否决</td><td class="mono-c">→ 生命周期复审入口</td></tr>
+          <tr><td>关闭并沉淀表单</td><td class="mono-c">→ 增量沉淀入口</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="crux" style="border-color:color-mix(in srgb,var(--p1) 45%,transparent);background:color-mix(in srgb,var(--p1) 8%,transparent);margin-top:16px">
+      <div class="lab" style="color:var(--p1)">持久战 · 实事求是</div>
+      <p>补齐 80% 是<b>持久战，不可能一步到位</b>。现实路径：<b>高频优先、逐步收敛</b>，和放权阶梯咬合——高频码先补先毕业。<b>别对领导承诺"上线即全自动"，要承诺"一台越用越强、覆盖逐格扩大的机器"。</b></p>
+    </div>
+  </section>
+
+  <!-- 8 决策记录 -->
+  <section>
+    <div class="sec-head">
+      <div class="sec-num">13</div>
       <div class="eyebrow">决策记录</div>
       <h2>已锁定的三个架构决定</h2>
     </div>
@@ -1011,13 +1076,21 @@
           <div class="imp"><b>下游约束</b> 有害错误 / 高置信却错零容忍；P0 一开始就跑影子但不自动；否决即触发 SOP 复审；每个错误码带「自主档」状态（详见 §11）。</div>
         </div>
       </div>
+      <div class="dec">
+        <div class="lock">✓</div>
+        <div>
+          <h4>D6 · 知识运营 = 沉淀嵌进流程 + 贡献者受益 + 专家只审核</h4>
+          <p>补全嵌进处置流程（沉淀即点确认）；三来源（存量挖掘 / 增量沉淀 / 主动补全 backlog）；生命周期 candidate→approved→deprecated + version；否决/连续失败触发复审。</p>
+          <div class="imp"><b>下游约束</b> 分层审核归属；覆盖率/可自动化率进团队 KPI + 贡献看板；高频优先的持久战，不承诺一步到位（详见 §12）。</div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- 11 风险与修正 -->
   <section>
     <div class="sec-head">
-      <div class="sec-num">13</div>
+      <div class="sec-num">14</div>
       <div class="eyebrow">风险与修正</div>
       <h2>用「实事求是」复核后的诚实修正</h2>
       <div class="method-note">评审方法：调查研究 → 矛盾分析 → 批评与自我批评 · 数据取自《故障与措施》原表</div>
@@ -1069,7 +1142,7 @@
       <div class="risk"><span class="sev sev-mid">🟡 中</span><div>
         <h4>R6 · 片面性：重技术架构、轻知识运营</h4>
         <p>谁来补那 70% 空缺的恢复方案？一线凭什么花时间写 SOP？知识侧恰是主要矛盾，却没有运营与激励机制——知识库会饿死。</p>
-        <div class="fix"><b>修正</b>把「知识运营机制」列为与技术并列的一条工作线：责任主体、补全激励、复审节奏。</div>
+        <div class="fix"><b>修正 · ✓ 已立机制（§12）</b>知识运营独立成一条工作线：沉淀嵌进流程 + 贡献者受益 + 专家只审核；三来源 + 生命周期 + KPI 激励。仍是持久战，需真实投入。</div>
       </div></div>
     </div>
 
@@ -1091,7 +1164,7 @@
   <!-- 12 下一步 -->
   <section>
     <div class="sec-head">
-      <div class="sec-num">14</div>
+      <div class="sec-num">15</div>
       <div class="eyebrow">下一步</div>
       <h2>待推进事项</h2>
     </div>
