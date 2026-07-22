@@ -87,6 +87,10 @@
   .syschip{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);
     border:1px solid transparent;border-radius:5px;padding:1px 6px;white-space:nowrap}
   .card .ec.light{color:var(--muted);background:var(--surface-3)}
+  .autob{font-family:var(--mono);font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;white-space:nowrap;border:1px solid transparent}
+  .autob.shadow{color:var(--muted);background:var(--surface-3)}
+  .autob.suggest{color:var(--accent);background:var(--accent-soft)}
+  .autob.auto{color:var(--ok);background:var(--ok-soft)}
   .list{display:grid;gap:9px}
   .card{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:6px 14px;background:var(--surface);
     border:1px solid var(--line);border-radius:12px;padding:13px 16px 13px 18px;cursor:pointer;transition:.13s;
@@ -210,7 +214,7 @@
   <div id="listView">
     <div class="apphead">
       <h1>故障工作台</h1><span class="tag">列表页 · 详情入口</span>
-      <p>值班总览：按<b>系统</b> / 级别 / 状态筛选，点任一故障进入详情页（版式 A）处置。多系统接入，路由键为 <span class="mono">(system, error_code)</span>。</p>
+      <p>值班总览：按<b>系统</b> / 级别 / 状态筛选，点任一故障进入详情页（版式 A）处置。路由键 <span class="mono">(system, error_code)</span>；每个故障带<b>自主档</b>徽标（<span class="autob shadow">影子</span> / <span class="autob suggest">建议</span> / <span class="autob auto">自动·只读</span>）——按错误码逐格放权。</p>
     </div>
 
     <div class="summary">
@@ -341,6 +345,10 @@
   ];
   DB.forEach(d=>{ if(!d.sys) d.sys='CSDP'; });
   DB.push.apply(DB, EXTRA);
+  // 自主档（放权阶梯 · 按错误码毕业）：auto=自动·只读 / suggest=建议 / shadow=影子
+  const AUTO={'903001':'auto','101024':'suggest','901002':'suggest','2000001':'shadow','301002':'suggest','801008':'shadow','ICARE-30201':'shadow','PRM-40011':'shadow','MKT-LP':'shadow'};
+  DB.forEach(d=>{ d.auto = AUTO[d.id] || 'shadow'; });
+  const AUTO_LABEL={shadow:'影子',suggest:'建议',auto:'自动·只读'};
 
   let filter='all', sysFilter='all', cur=null;
 
@@ -379,7 +387,7 @@
       <div class="card" style="--sevc:${sevColor[d.sev]}" onclick="openDetail('${d.id}')" tabindex="0" onkeydown="if(event.key==='Enter')openDetail('${d.id}')">
         <span class="sv">${d.sev}</span>
         <div class="main">
-          <div class="ttl"><span class="syschip">${d.sys}</span>${d.service} · ${d.title} <span class="ec${d.light?' light':''}">${d.light?'轻接入·无码':d.ecode}</span></div>
+          <div class="ttl"><span class="syschip">${d.sys}</span>${d.service} · ${d.title} <span class="ec${d.light?' light':''}">${d.light?'轻接入·无码':d.ecode}</span> <span class="autob ${d.auto}" title="自主档 · 放权阶梯">${AUTO_LABEL[d.auto]}</span></div>
           <div class="sub"><span><b>影响</b> ${d.impact}</span><span><b>类型</b> ${d.type}</span><span><b>处理人</b> ${d.owner}</span></div>
         </div>
         <div class="right">
@@ -408,6 +416,7 @@
         <div class="row2">
           ${it.sla!=='—'?`<span class="slaBig"><span class="pulse"></span>SLA 剩余 <span id="slaBig" class="mono">${it.sla}</span></span>`:'<span class="mono" style="color:var(--muted)">外部依赖 · 无 SLA 计时</span>'}
           <span><b>系统</b> ${it.sys}${it.light?' · 轻接入·LLM 分诊':''}</span>
+          <span><b>自主档</b> <span class="autob ${it.auto}">${AUTO_LABEL[it.auto]}</span></span>
           <span><b>影响</b> ${it.impact}</span><span><b>类型</b> ${it.type}</span><span><b>trace</b> <span class="mono">${it.trace}</span></span>
         </div>
       </div>
@@ -527,7 +536,7 @@
       return c;
     }
     if(ecode){ // 有码但未登记 SOP → LLM 兜底，仍显示码
-      return {id:id,sys:sys,sev:'P2',service:'—',ecode:ecode,title:'（手动录入）'+text.slice(0,16),
+      return {id:id,sys:sys,auto:'shadow',sev:'P2',service:'—',ecode:ecode,title:'（手动录入）'+text.slice(0,16),
         impact:'待确认',type:'未知异常 · 码未登记',trace:tr,sla:'—',slaCls:'cool',st:'diag',age:'刚刚',owner:'当班',
         cause:'error_code='+ecode+' 未登记 SOP，LLM 依据录入内容分诊：'+text.slice(0,40),conf:'低',confN:1,sop:'— 未登记，LLM 兜底',
         steps:[{tier:'auto',tl:'LLM · 取证',tx:'LLM 依据录入内容动态构造 DQL 取证',sub:'无预置 SOP',done:1},
@@ -536,7 +545,7 @@
         tl:baseTl.concat([{t:'刚刚',x:'error_code 未登记 → LLM 分诊',w:'LLM',c:'now'},{t:'— —:—',x:'待处置+沉淀',w:'',c:'pending'}])};
     }
     // 无码 → LLM 分诊（symptom）
-    return {id:id,sys:sys,sev:'P2',service:'—',ecode:'—',light:1,title:'（手动录入）'+(text.slice(0,16)||'现象描述'),
+    return {id:id,sys:sys,auto:'shadow',sev:'P2',service:'—',ecode:'—',light:1,title:'（手动录入）'+(text.slice(0,16)||'现象描述'),
       impact:'待确认',type:'未知异常 · 待归类',trace:tr,sla:'—',slaCls:'cool',st:'diag',age:'刚刚',owner:'当班',
       cause:'（无结构化错误码）LLM 分诊：'+text.slice(0,40),conf:'低',confN:1,sop:'— 未命中，走 LLM 分诊',
       steps:[{tier:'auto',tl:'LLM · 取证',tx:'LLM 依据现象描述动态构造 DQL 取证',sub:'symptom 输入 · 无预置 SOP',done:1},
