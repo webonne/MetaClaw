@@ -603,6 +603,24 @@
     <div class="callout" style="margin-top:16px">
       <b>部署约束。</b> 观测云端点为内网地址（<code style="background:transparent;border:none;color:inherit">*.prd.sangfor.com</code>），当前云端环境不可达。连接器与整个排障运行时最终须部署在<b>能访问内网</b>的环境；开发期可用录制响应打通逻辑，真实联调在内网进行。<code style="background:transparent;border:none;color:inherit">DF-API-KEY</code> 作为运行时密钥配置，不写入 SOP 正文或 prompt。
     </div>
+
+    <h3>证据源开放适配（D8 · 多平台 Observability Abstraction Layer）</h3>
+    <p class="sub"><b>观测云是首个适配器，不是唯一。</b> 证据源必须开放、可插拔——后续可接 Zabbix / Prometheus / 日志平台。关键是把三件事拆开：<b>要观测什么</b>（进 SOP，平台无关）/ <b>在平台 P 上怎么查</b>（绑定注册表，每平台一份）/ <b>P 的响应怎么归一</b>（适配器）。</p>
+    <pre><span class="cm"># SOP 存平台无关「意图」，不含任何平台查询语法</span>
+EvidenceRequest{ signal_kind:<span class="st">"metric"</span>, target:{host, metric:<span class="st">"mongo.connections"</span>}, required:true }
+        │  <span class="cm">Router：按 (system, signal_kind) 选平台适配器（主+备）</span>
+        ▼
+Adapter(guance|<span class="kw">zabbix</span>|prometheus|recorded|fixture) → 造查询 · 执行 · <span class="kw">归一</span>
+        ▼
+EvidenceResult{ observed:{connections_current, ...} }  <span class="cm"># 规则引擎跑在归一字段上，平台无关</span></pre>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="principle"><h4>D-A · 绑定放注册表</h4><p>SOP 只存意图；`(signal, 平台)` 查询模板放绑定注册表——加平台不改 SOP。</p></div>
+      <div class="principle"><h4>D-B · 按 system+signal 路由</h4><p>一个系统可多平台混用：日志走 Loki、指标走 Zabbix、链路走观测云。</p></div>
+      <div class="principle"><h4>D-C · 归一化词汇表</h4><p>各适配器归一到同名 canonical 字段——<b>同一条 anomaly_criteria 跨平台零改动成立</b>。</p></div>
+    </div>
+    <div class="callout" style="margin-top:14px">
+      <b>加 Zabbix = 加一个绑定 + 一个 adapter</b>，零改 SOP、零改 anomaly_criteria、零改回归集。契约草案（EvidenceRequest / SourceAdapter / 归一词汇表 / 路由配置）详见 <code style="background:transparent;border:none;color:inherit">observability-abstraction-design.md</code>。
+    </div>
   </section>
 
   <!-- 6 运转全过程 -->
@@ -1107,7 +1125,7 @@
     <div class="sec-head">
       <div class="sec-num">13</div>
       <div class="eyebrow">决策记录</div>
-      <h2>已锁定的七个架构决定</h2>
+      <h2>已锁定的八个架构决定</h2>
     </div>
     <div class="decisions" style="margin-top:18px">
       <div class="dec">
@@ -1164,6 +1182,14 @@
           <h4>D7 · MetaClaw 集成 = 产品入口一体、领域 Module 与运行时分开</h4>
           <p>同仓、同发行包、统一启动；排障先保持独立进程与 loopback，通过 ReasoningGateway / KnowledgePublisher Adapter 复用 MetaClaw，不继承或侵入核心内核。</p>
           <div class="imp"><b>下游约束</b> Core 不导入排障领域模型；排障只依赖稳定 HTTP 契约。P2 已完成 SQLite 持久化、schema migration、事务 Outbox、静态资源打包与重启恢复；可信身份 / RBAC、真实 Adapter 和统一 Launcher 完成前，仍保持 loopback 独立进程，不并入 Core FastAPI。实施合同见 <a href="./metaclaw-integration-design.md">MetaClaw 集成设计</a>。</div>
+        </div>
+      </div>
+      <div class="dec">
+        <div class="lock">✓</div>
+        <div>
+          <h4>D8 · 证据源开放适配（Observability Abstraction Layer）</h4>
+          <p>证据源可插拔多平台——观测云是首个适配器，Zabbix / Prometheus / 日志平台可后续接入。SOP 存平台无关意图（EvidenceRequest），绑定放注册表(D-A)，按 system+signal 路由(D-B)，各适配器归一到 canonical <code style="background:transparent;border:none;color:inherit">observed</code> 字段(D-C)。</p>
+          <div class="imp"><b>下游约束</b> 加平台 = 加一个绑定 + 一个 adapter，零改 SOP / anomaly_criteria / 回归集；`EvidenceQuery.query`(DQL 串) 需重构为 EvidenceRequest + SourceAdapter/Router（复核缺口 G7）。契约见 <a href="./observability-abstraction-design.md">证据源开放适配设计</a>。</div>
         </div>
       </div>
     </div>
