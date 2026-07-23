@@ -79,6 +79,10 @@ docs/intelligent-troubleshooting/
 - **当前数据阻断**：`101014`、`101034`、`101040` 在拆分多码单元格后均对应多个业务上下文，
   与 D1 `(system,error_code)` 唯一路由前提冲突；另有 103 处疑似被旧解析器截断的 IP、组件版本、
   联系人手机号、`limit/skip` 调用。清洗器把两类问题都设为阻断并拒绝自动落盘，详见 `quality_report.md`。
+- **D7 P1 核心收口已落地**：HTTP 已收口到 `TroubleshootingModule`；新增 `DiagnosisRepository` 与
+  `InMemoryDiagnosisRepository`，统一承担副本隔离、5 分钟桶幂等和命令原子更新；领域错误已带稳定机器码。
+  `ReasoningGateway` / `KnowledgePublisher` 不提前创建空 Protocol，等 P2 outbox 和 P3 MetaClaw Adapter
+  出现后再落地。当前 `actor` 仍是请求体审计标签而非可信身份，官方启动命令在 P5 认证前硬拒绝非 loopback。
 
 ---
 
@@ -95,8 +99,8 @@ docs/intelligent-troubleshooting/
 
 - 把 `903001.md` 的模式**复制到其他高频码**（901002 微信 / 2000001 渠道 / 801008 主数据…backlog 见 inventory_report）。
 - 用 owner 结论处理 `quality_report.md` 的 3 个 `KEY_COLLISION`，再执行结构化清洗落库。
-- 按 D7 收口 **TroubleshootingModule** façade，抽出 DiagnosisRepository / ReasoningGateway / KnowledgePublisher，先保持行为不变。
-- 把工作台迁入 Python package-data，并补 SQLite、outbox、`/readyz`，确保 wheel 安装和重启恢复可验证。
+- 开始 D7 P2：把工作台迁入 Python package-data，并补 SQLite、schema migration、outbox、`/readyz`，
+  确保 wheel 安装和重启恢复可验证。
 - 起草 **观测云 MCP server** 与 **SOP 查询 MCP server** 的接口定义。
 
 ## ⚠️ 敏感数据说明

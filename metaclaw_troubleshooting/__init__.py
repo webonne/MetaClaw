@@ -8,12 +8,14 @@ testable.
 
 from .factory import build_fixture_orchestrator, fixture_incident_903001
 from .models import Diagnosis, IncidentContext, SopEntry
+from .module import TroubleshootingModule
 from .orchestrator import TroubleshootingOrchestrator
 
 __all__ = [
     "Diagnosis",
     "IncidentContext",
     "SopEntry",
+    "TroubleshootingModule",
     "TroubleshootingOrchestrator",
     "build_fixture_orchestrator",
     "fixture_incident_903001",

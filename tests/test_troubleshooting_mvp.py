@@ -1,7 +1,14 @@
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import redirect_stderr
+from datetime import datetime, timezone
+from io import StringIO
+from threading import Barrier
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from metaclaw_troubleshooting.__main__ import main as troubleshooting_main
 from metaclaw_troubleshooting.api import create_app
 from metaclaw_troubleshooting.factory import (
     build_fixture_orchestrator,
@@ -12,8 +19,12 @@ from metaclaw_troubleshooting.fixtures import (
     fixture_sop_903001,
 )
 from metaclaw_troubleshooting.models import (
+    ActionOutcomeRequest,
     ActionType,
+    ApprovalRequest,
     ApprovalStatus,
+    CloseRequest,
+    ClosureOutcome,
     Confidence,
     DiagnosisStatus,
     EvidenceStatus,
@@ -21,9 +32,21 @@ from metaclaw_troubleshooting.models import (
     IncidentCompleteness,
     IncidentContext,
     RouteMode,
+    TransferRequest,
+)
+from metaclaw_troubleshooting.module import (
+    ApproveAction,
+    CloseDiagnosis,
+    ConfirmDiagnosis,
+    ExecuteAction,
+    ProductionWriteDisabled,
+    RecordActionOutcome,
+    TransferDiagnosis,
+    TroubleshootingModule,
 )
 from metaclaw_troubleshooting.orchestrator import TroubleshootingOrchestrator
 from metaclaw_troubleshooting.repository import (
+    InMemoryDiagnosisRepository,
     InMemorySopRepository,
     SopKeyCollisionError,
 )
@@ -46,6 +69,21 @@ class TimeoutEvidenceCollector:
 
     def collect(self, query, incident):
         raise TimeoutError("simulated collector timeout")
+
+
+class CoordinatedGetDiagnosisRepository(InMemoryDiagnosisRepository):
+    """Forces legacy get/mutate/save callers to read the same revision."""
+
+    def __init__(self):
+        super().__init__()
+        self.coordinate_reads = False
+        self._read_barrier = Barrier(2)
+
+    def get(self, diagnosis_id: str):
+        diagnosis = super().get(diagnosis_id)
+        if self.coordinate_reads:
+            self._read_barrier.wait(timeout=2)
+        return diagnosis
 
 
 class TroubleshootingOrchestratorTests(unittest.TestCase):
@@ -183,6 +221,210 @@ class TroubleshootingOrchestratorTests(unittest.TestCase):
             InMemorySopRepository([original, duplicate])
 
 
+class TroubleshootingModuleTests(unittest.TestCase):
+    def test_module_owns_diagnose_query_and_confirm_with_repository_isolation(self):
+        repository = InMemoryDiagnosisRepository()
+        module = TroubleshootingModule(
+            orchestrator=build_approved_fixture_orchestrator(),
+            diagnoses=repository,
+        )
+
+        created = module.diagnose(fixture_incident_903001())
+        fetched = module.get(created.diagnosis_id)
+
+        self.assertIsNotNone(fetched)
+        self.assertIsNot(created, fetched)
+        fetched.status = DiagnosisStatus.CLOSED
+        self.assertEqual(module.get(created.diagnosis_id).status, DiagnosisStatus.READY_FOR_HUMAN)
+
+        confirmed = module.apply(
+            created.diagnosis_id,
+            ConfirmDiagnosis(actor="on-call"),
+        )
+
+        self.assertEqual(confirmed.status, DiagnosisStatus.CONFIRMED)
+        self.assertEqual(module.get(created.diagnosis_id).status, DiagnosisStatus.CONFIRMED)
+        self.assertEqual(module.list()[0].timeline[-1].actor, "on-call")
+
+    def test_module_keeps_composite_idempotency_out_of_http_adapter(self):
+        module = TroubleshootingModule(
+            orchestrator=build_approved_fixture_orchestrator(),
+            diagnoses=InMemoryDiagnosisRepository(),
+        )
+        base = fixture_incident_903001().model_copy(update={"occurred_at": "2026-07-23T04:22:30+00:00"})
+
+        first = module.diagnose(base.model_copy(update={"incident_id": "inc-first"}))
+        duplicate = module.diagnose(base.model_copy(update={"incident_id": "inc-duplicate"}))
+
+        self.assertEqual(duplicate.diagnosis_id, first.diagnosis_id)
+        self.assertEqual(len(module.list()), 1)
+
+    def test_repository_keeps_ingestion_bucket_stable_when_occurred_at_is_missing(self):
+        module = TroubleshootingModule(
+            orchestrator=build_approved_fixture_orchestrator(),
+            diagnoses=InMemoryDiagnosisRepository(),
+        )
+        first_incident = fixture_incident_903001().model_copy(update={"incident_id": "inc-first-without-occurred-at"})
+
+        with patch("metaclaw_troubleshooting.repository.datetime") as clock:
+            clock.now.return_value = datetime(2026, 7, 23, 4, 22, tzinfo=timezone.utc)
+            clock.fromisoformat.side_effect = datetime.fromisoformat
+            first = module.diagnose(first_incident)
+
+        with patch("metaclaw_troubleshooting.repository.datetime") as clock:
+            clock.now.return_value = datetime(2026, 7, 23, 4, 28, tzinfo=timezone.utc)
+            clock.fromisoformat.side_effect = datetime.fromisoformat
+            module.apply(first.diagnosis_id, ConfirmDiagnosis(actor="on-call"))
+            second = module.diagnose(
+                first_incident.model_copy(update={"incident_id": "inc-second-without-occurred-at"})
+            )
+
+        self.assertNotEqual(second.diagnosis_id, first.diagnosis_id)
+        self.assertEqual(len(module.list()), 2)
+
+    def test_module_applies_concurrent_commands_without_losing_audit_state(self):
+        repository = CoordinatedGetDiagnosisRepository()
+        module = TroubleshootingModule(
+            orchestrator=build_approved_fixture_orchestrator(),
+            diagnoses=repository,
+        )
+        diagnosis = module.diagnose(fixture_incident_903001())
+        module.apply(diagnosis.diagnosis_id, ConfirmDiagnosis(actor="on-call"))
+        write_action = next(
+            action for action in diagnosis.recommended_actions if action.action_type == ActionType.MANUAL_WRITE
+        )
+        commands = [
+            TransferDiagnosis(
+                request=TransferRequest(
+                    actor="on-call",
+                    target_team="DBA 值班",
+                    note="并发转派",
+                )
+            ),
+            ApproveAction(
+                action_id=write_action.action_id,
+                request=ApprovalRequest(actor="dba", reason="并发审批"),
+            ),
+        ]
+
+        repository.coordinate_reads = True
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(module.apply, diagnosis.diagnosis_id, command) for command in commands]
+            for future in futures:
+                future.result(timeout=2)
+        repository.coordinate_reads = False
+
+        stored = module.get(diagnosis.diagnosis_id)
+        stored_write_action = next(
+            action for action in stored.recommended_actions if action.action_id == write_action.action_id
+        )
+        self.assertEqual(stored.status, DiagnosisStatus.TRANSFERRED)
+        self.assertEqual(len(stored.transfers), 1)
+        self.assertEqual(stored_write_action.approval_status, ApprovalStatus.APPROVED)
+
+    def test_module_applies_full_human_flow_and_keeps_write_executor_disconnected(self):
+        module = TroubleshootingModule(
+            orchestrator=build_approved_fixture_orchestrator(),
+            diagnoses=InMemoryDiagnosisRepository(),
+        )
+        diagnosis = module.diagnose(fixture_incident_903001())
+        diagnosis_id = diagnosis.diagnosis_id
+        write_action = next(
+            action for action in diagnosis.recommended_actions if action.action_type == ActionType.MANUAL_WRITE
+        )
+
+        module.apply(diagnosis_id, ConfirmDiagnosis(actor="on-call"))
+        module.apply(
+            diagnosis_id,
+            TransferDiagnosis(
+                request=TransferRequest(
+                    actor="on-call",
+                    target_team="DBA 值班",
+                    note="携带上下文转派",
+                )
+            ),
+        )
+        module.apply(
+            diagnosis_id,
+            ApproveAction(
+                action_id=write_action.action_id,
+                request=ApprovalRequest(actor="dba", reason="维护窗口已确认"),
+            ),
+        )
+        module.apply(
+            diagnosis_id,
+            RecordActionOutcome(
+                action_id=write_action.action_id,
+                request=ActionOutcomeRequest(
+                    actor="dba",
+                    outcome="succeeded",
+                    notes="外部系统已执行",
+                    recovery_verified=True,
+                ),
+            ),
+        )
+        closed = module.apply(
+            diagnosis_id,
+            CloseDiagnosis(
+                request=CloseRequest(
+                    actor="on-call",
+                    outcome=ClosureOutcome.RECOVERED,
+                    summary="业务探测恢复",
+                    recovery_verified=True,
+                    create_knowledge_candidate=True,
+                )
+            ),
+        )
+
+        self.assertEqual(closed.status, DiagnosisStatus.CLOSED)
+        self.assertEqual(len(closed.knowledge_candidates), 1)
+        with self.assertRaisesRegex(ProductionWriteDisabled, "not connected"):
+            module.apply(diagnosis_id, ExecuteAction(action_id=write_action.action_id))
+
+    def test_module_marks_rehearsal_before_storage_and_excludes_it_from_default_list(self):
+        repository = InMemoryDiagnosisRepository()
+        module = TroubleshootingModule(
+            orchestrator=build_approved_fixture_orchestrator(),
+            diagnoses=repository,
+        )
+        incident = fixture_incident_903001().model_copy(
+            update={
+                "incident_id": "rehearsal-903001-module",
+                "system": "CSDP",
+                "intake_source": "workbench_rehearsal",
+            }
+        )
+
+        diagnosis = module.diagnose(
+            incident,
+            actor="demo-on-call",
+            rehearsal=True,
+        )
+
+        self.assertTrue(diagnosis.rehearsal)
+        self.assertIn("合成演练", diagnosis.warnings[0])
+        self.assertEqual(diagnosis.timeline[0].actor, "demo-on-call")
+        self.assertEqual(module.list(), [])
+        self.assertEqual(len(module.list(include_rehearsals=True)), 1)
+
+
+class TroubleshootingEntrypointTests(unittest.TestCase):
+    @patch("metaclaw_troubleshooting.__main__._serve")
+    def test_entrypoint_accepts_loopback_binding(self, run_server):
+        troubleshooting_main(["--host", "::1", "--port", "18083"])
+
+        run_server.assert_called_once_with("::1", 18083)
+
+    @patch("metaclaw_troubleshooting.__main__._serve")
+    def test_entrypoint_rejects_non_loopback_binding_before_auth_exists(self, run_server):
+        stderr = StringIO()
+        with redirect_stderr(stderr), self.assertRaisesRegex(SystemExit, "2"):
+            troubleshooting_main(["--host", "0.0.0.0"])
+
+        run_server.assert_not_called()
+        self.assertIn("non-loopback binding is disabled", stderr.getvalue())
+
+
 class TroubleshootingApiTests(unittest.TestCase):
     def setUp(self):
         app = create_app(orchestrator=build_fixture_orchestrator(), seed_demo=True)
@@ -248,7 +490,40 @@ class TroubleshootingApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["code"], "workflow_conflict")
         self.assertIn("requires new evidence", response.json()["detail"])
+
+    def test_domain_errors_expose_stable_machine_codes(self):
+        client = TestClient(
+            create_app(
+                orchestrator=build_approved_fixture_orchestrator(),
+                seed_demo=True,
+            )
+        )
+
+        missing_diagnosis = client.get("/v1/troubleshooting/diagnoses/does-not-exist")
+        self.assertEqual(missing_diagnosis.status_code, 404)
+        self.assertEqual(missing_diagnosis.json()["code"], "diagnosis_not_found")
+
+        diagnosis = client.get("/v1/troubleshooting/diagnoses").json()[0]
+        diagnosis_id = diagnosis["diagnosis_id"]
+        client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/confirm",
+            json={"actor": "on-call"},
+        )
+        invalid_action = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/retain-evidence/approve",
+            json={"actor": "on-call", "reason": "不应审批只读动作"},
+        )
+        self.assertEqual(invalid_action.status_code, 400)
+        self.assertEqual(invalid_action.json()["code"], "invalid_action")
+
+        missing_action = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/does-not-exist/approve",
+            json={"actor": "on-call", "reason": "不存在"},
+        )
+        self.assertEqual(missing_action.status_code, 404)
+        self.assertEqual(missing_action.json()["code"], "action_not_found")
 
     def test_write_action_can_be_approved_but_never_executed(self):
         client = TestClient(create_app(orchestrator=build_approved_fixture_orchestrator(), seed_demo=True))
@@ -285,6 +560,7 @@ class TroubleshootingApiTests(unittest.TestCase):
             f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{write_action['action_id']}/execute"
         )
         self.assertEqual(execution.status_code, 409)
+        self.assertEqual(execution.json()["code"], "production_write_disabled")
         self.assertIn("not connected", execution.json()["detail"])
 
     def test_rehearsal_903001_runs_the_full_human_controlled_flow(self):

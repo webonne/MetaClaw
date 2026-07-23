@@ -210,7 +210,7 @@ class FixtureEvidenceCollector:
         return self._log_only(query, incident)
 
     def _saturated(self, query: EvidenceQuery, incident: IncidentContext) -> EvidenceResult:
-        fixtures = {
+        fixtures: dict[str, tuple[EvidenceStatus, str, dict[str, object]]] = {
             "error-log": (
                 EvidenceStatus.ANOMALY,
                 "903001 错误日志 47 条",
@@ -242,7 +242,7 @@ class FixtureEvidenceCollector:
         return self._result(query, fixtures[query.query_id])
 
     def _log_only(self, query: EvidenceQuery, incident: IncidentContext) -> EvidenceResult:
-        fixtures = {
+        fixtures: dict[str, tuple[EvidenceStatus, str, dict[str, object]]] = {
             "error-log": (
                 EvidenceStatus.ANOMALY,
                 "903001 错误日志 3 条",

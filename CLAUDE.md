@@ -5,9 +5,9 @@
 
 ## 接续这项工作，先读
 
-1. **`docs/intelligent-troubleshooting/HANDOFF.md`** —— 完整会话记忆：6 个已锁定决策（D1–D6）、架构骨架、
+1. **`docs/intelligent-troubleshooting/HANDOFF.md`** —— 完整会话记忆：7 个已锁定决策（D1–D7）、架构骨架、
    主要矛盾、已交付清单、下一步。**必读，一份就够上手。**
-2. `docs/intelligent-troubleshooting/architecture-blueprint.html` —— 完整蓝图 v0.3（15 节）。
+2. `docs/intelligent-troubleshooting/architecture-blueprint.html` —— 完整蓝图 v0.3（16 节）。
 3. `docs/intelligent-troubleshooting/l0/` —— 已落地的 L0 结构化 SOP 库 + 家底盘点 + 903001 取证草案。
 
 ## 关键约束（细节见 HANDOFF）

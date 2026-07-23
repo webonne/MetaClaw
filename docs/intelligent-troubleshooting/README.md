@@ -57,6 +57,11 @@ uv run --no-project --with fastapi --with uvicorn python -m metaclaw_troubleshoo
 状态机拒绝跳过诊断确认、动作审批、外部结果或恢复验证；转派快照携带 case/run、trace、根因、置信度和
 证据 ID。知识候选预填证据、推荐动作、实际处置结果、根因与关闭摘要，只进入审核队列，不直接覆盖 SOP。
 
+D7 P1 核心收口已完成：HTTP 入口只负责协议转换，诊断创建、查询与状态命令统一进入
+`TroubleshootingModule`；`DiagnosisRepository` 负责副本隔离、复合幂等和并发命令原子更新，领域错误同时
+返回稳定机器码与可读说明。Reasoning / Knowledge 边界将在真实 MetaClaw Adapter 与 outbox 出现后再抽取，
+避免用空接口制造“已集成”的假象。当前 `actor` 尚未接可信身份，启动命令会拒绝非 loopback 地址。
+
 默认 `903001` SOP 保持 `draft/verified=false`：工作台只展示影子取证，隐藏正式根因与恢复动作；只有测试中显式构造
 或隔离演练中构造 `approved/verified=true` 的合成 SOP，才会验证“人工批准但不执行”的合同。取证工具超时会降级为
 人工取证，不返回 500。

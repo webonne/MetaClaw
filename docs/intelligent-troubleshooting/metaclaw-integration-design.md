@@ -1,6 +1,6 @@
 # MetaClaw × 智能排障集成设计
 
-> 状态：Accepted · D7
+> 状态：Accepted · D7 · P1 核心收口已落地
 >
 > 日期：2026-07-23
 >
@@ -63,8 +63,8 @@ flowchart LR
 
     G --> P
     G --> H
-    TM -->|"ReasoningGateway Adapter"| P
-    TM -->|"KnowledgePublisher Adapter"| MEM
+    TM -.->|"P3 · ReasoningGateway"| P
+    TM -.->|"P3 · KnowledgePublisher"| MEM
     O -->|"EvidenceCollector Adapter"| DQL["观测云 / MCP"]
     O -->|"SopRepository Adapter"| KB["Canonical SOP KB"]
 ```
@@ -78,47 +78,69 @@ flowchart LR
 
 ## 4. 排障 Module 的外部 Interface
 
-调用者不应直接组合 `TroubleshootingOrchestrator`、`DiagnosisWorkflow` 与 Repository。目标是收敛成一个
-深 Module，HTTP、IM、测试都只通过同一 Interface：
+调用者不应直接组合 `TroubleshootingOrchestrator`、`DiagnosisWorkflow` 与 Repository。P1 已收敛成一个
+深 Module；HTTP 的业务命令只通过以下 Interface：
 
 ```python
 class TroubleshootingModule(Protocol):
-    def diagnose(self, incident: IncidentContext, actor: Actor) -> Diagnosis: ...
+    def diagnose(
+        self,
+        incident: IncidentContext,
+        *,
+        actor: str | None = None,
+        rehearsal: bool = False,
+    ) -> Diagnosis: ...
 
     def apply(
         self,
         diagnosis_id: str,
         command: DiagnosisCommand,
-        actor: Actor,
     ) -> Diagnosis: ...
 
-    def get(self, diagnosis_id: str, actor: Actor) -> Diagnosis | None: ...
+    def get(self, diagnosis_id: str) -> Diagnosis | None: ...
 
-    def list(self, query: DiagnosisQuery, actor: Actor) -> DiagnosisPage: ...
+    def list(self, *, include_rehearsals: bool = False) -> list[Diagnosis]: ...
 ```
 
-### Interface 不变量
+P1 为保持现有 API 行为，命令中的 `actor` 仍来自请求体，只能视为审计标签，**不是可信身份**。因此在 P5
+接入 SSO / Gateway Identity Adapter 前，`metaclaw-troubleshooting` 启动命令硬拒绝非 loopback 地址，不得把
+当前 Interface 暴露为公共入口。
+
+### 已落地的 Interface 不变量
 
 - `diagnose` 按 `(system,error_code,service,5分钟桶)` 幂等；重复输入返回既有 Case/Run。
-- `actor` 必须来自已验证身份，禁止继续相信请求体中的任意字符串。
-- `apply` 承载 confirm、transfer、approve、record_outcome、close 等命令；状态迁移冲突统一返回稳定错误码。
+- `apply` 承载 confirm、transfer、approve、record_outcome、close 等命令；并发命令在 Repository 原子更新中串行提交。
+- 状态迁移冲突返回稳定机器码与可读 `detail`，客户端不依赖错误文案分支。
 - 任何路径都不直接执行生产写操作。
 - MetaClaw 不可用时，确定性路由仍可工作；未知码必须 abstain，不得伪造恢复动作。
 - Evidence 不完整或 SOP 未审核时 fail-closed。
 - HTTP、IM 与 Web 只消费统一 `Diagnosis`，不各自拼接业务状态。
 
-## 5. 必须存在的 Seam 与 Adapter
+### P5 入口准入不变量
+
+- `actor` 必须来自已验证身份，禁止继续相信请求体中的任意字符串。
+- `get/list/apply` 必须执行组织空间与能力授权；未认证 401、无能力 403。
+- 在这两项完成前，只允许 `127.0.0.1` 本地入口，不得宣称已完成统一公共入口。
+
+## 5. Seam 与 Adapter 准入
+
+当前只保留已经有真实调用方和替换实现方向的 Seam：
 
 | Seam / Interface | 当前 Adapter | 下一 Adapter | 失败语义 |
 |---|---|---|---|
 | `DiagnosisRepository` | `InMemoryDiagnosisRepository` | `SQLiteDiagnosisRepository`，再到 Postgres | 存储不可用时拒绝创建/迁移状态，不静默丢审计 |
 | `SopRepository` | `InMemorySopRepository` | `CanonicalSopRepository` / SOP MCP | 冲突、损坏、未审核均不进入正式诊断 |
 | `EvidenceCollector` | `FixtureEvidenceCollector` | `GuanceMcpEvidenceCollector` | 超时转 missing evidence，强制降级人工取证 |
-| `ReasoningGateway` | `DisabledReasoningGateway` | `MetaClawReasoningAdapter` | MetaClaw 不可用或输出校验失败时 abstain |
-| `KnowledgePublisher` | `RecordingKnowledgePublisher` | `MetaClawKnowledgeAdapter` | 发布失败写 outbox，关闭结果不丢失、不直接晋升 SOP |
-| `IdentityProvider` | `LocalDevIdentityAdapter` | SSO / Gateway Adapter | 未认证 401、无能力 403，领域层不接受伪造 actor |
 
-只有确实存在“生产 + 测试”两个 Adapter 的位置才保留 Seam。不要为未来猜测创建空 Protocol。
+以下是已命名但尚未创建空 Protocol 的规划边界：
+
+| 规划边界 | 引入触发条件 | 失败语义 |
+|---|---|---|
+| `ReasoningGateway` | P3 同时具备禁用/fixture 与 `MetaClawReasoningAdapter` | MetaClaw 不可用或输出校验失败时 abstain |
+| `KnowledgePublisher` | P2 outbox 已持久化且 P3 有 `MetaClawKnowledgeAdapter` 消费者 | 发布失败进入 outbox 重试，关闭结果不丢失、不直接晋升 SOP |
+| `IdentityProvider` | P5 同时具备本地开发身份与 SSO / Gateway Adapter | 未认证 401、无能力 403，领域层不接受伪造 actor |
+
+只有确实存在至少两个 Adapter 或一个稳定外部调用边界时才创建 Seam。不要为未来猜测创建空 Protocol。
 
 ## 6. MetaClaw 复用映射
 
@@ -237,27 +259,38 @@ RBAC、持久化和静态资源打包完成后，再由可信网关映射：
 
 ## 12. 分阶段实施
 
-### P1 · Module 收口，不改变现有行为
+### P1 · Module 收口，不改变现有行为（核心收口已完成 · 2026-07-23）
+
+> D7-P1 修订记录：原 P1 同时要求预建 `ReasoningGateway` / `KnowledgePublisher`，并让全部测试穿过
+> Module。实施时确认这与本设计“没有真实 Adapter 就不建空 Seam”冲突。现正式修订为：P1 只抽取已有
+> 两侧调用者的 `DiagnosisRepository`；Reasoning / Knowledge Protocol 在 P2/P3 具备 outbox 与真实 Adapter
+> 后再创建。Orchestrator 算法测试、HTTP 契约测试继续在各自边界，另增 Module 行为测试。此修订不降低
+> fail-closed、人工闸门或不连接生产写执行器的验收标准。
 
 - 新增 `TroubleshootingModule` façade；HTTP Adapter 不再直接拼 Orchestrator、Workflow、Store。
-- 抽出 `DiagnosisRepository`、`ReasoningGateway`、`KnowledgePublisher`。
-- 现有 fixture 与 17 项主流程测试全部改为穿过 Module Interface。
+- 抽出已有真实持久化边界的 `DiagnosisRepository`；幂等、副本隔离与原子命令更新由 Repository 负责。
+- 新增 6 项 Module Interface 行为测试；Orchestrator 算法测试与 HTTP 契约测试仍保留在各自边界。
+- `ReasoningGateway`、`KnowledgePublisher` 延后到真实 Adapter/outbox 出现时再创建，避免空抽象。
 - 保持 `metaclaw-troubleshooting` 独立命令可运行。
 
-验收：现有演练行为不变；MetaClaw 未启动时，确定性 fixture 流程仍可完整运行。
+验收结果：26 项排障测试通过；现有演练行为不变；MetaClaw 未启动时，确定性 fixture 流程仍可完整运行；
+官方启动命令拒绝 `0.0.0.0` 等非 loopback 绑定。
+身份认证属于 P5 入口准入，当前请求体 `actor` 未验证，故 P1 完成不代表可开放网络入口。
 
 ### P2 · 可安装与可恢复
 
 - 工作台迁入包内 static 并配置 package-data。
 - 上 SQLite Adapter、schema migration、outbox 与审计持久化。
+- 先定义知识发布的事务/outbox 语义，不直接耦合 MetaClaw Memory 内部实现。
 - 增加 `/readyz`、capabilities 与运行模式展示。
 
 验收：从 wheel 安装后可启动；重启后 Case/Run/审批/关闭记录不丢失。
 
 ### P3 · MetaClaw 能力接入
 
+- 在双侧 Adapter 已存在时引入 `ReasoningGateway` 与 `KnowledgePublisher` Protocol。
 - 实现 `MetaClawReasoningAdapter`，仅处理未知码/低完整度输入。
-- 实现 `MetaClawKnowledgeAdapter`，关闭后异步发布候选。
+- 实现 `MetaClawKnowledgeAdapter`，关闭后异步消费 outbox 中的候选。
 - 增加 schema、引用、置信度、abstain 和超时测试。
 
 验收：MetaClaw 停机不会破坏确定性路径；未知码不会因模型故障产生恢复动作。

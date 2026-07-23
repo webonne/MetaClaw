@@ -124,7 +124,7 @@
     { id: 'platform', name: '生产平台化能力', scope: '持久化 · 权限 · 密钥 · 可观测', cells: [
       S('done', 'D7 集成形态已锁定', '产品入口一体、领域 Module 与运行时分开；统一启动、Adapter 复用和 loopback 准入已写入蓝图。'),
       S('partial', '实施合同已写，资产待建', '配置、安全、数据归属和阶段准入已定义；持久化 schema、RBAC、静态资源包与部署资产尚未实现。'),
-      S('todo', '仍是单进程内存态', 'InMemoryDiagnosisStore/InMemorySopRepository 无持久化、并发与恢复能力。'),
+      S('todo', '仍是单进程内存态', 'InMemoryDiagnosisRepository/InMemorySopRepository 仍无持久化与重启恢复；进程内锁不能替代多进程事务。'),
       S('partial', '本地工作台可用', '页面可运行，但没有登录、权限、组织空间、审计检索和运维入口。'),
       S('todo', '未部署共享环境', '当前仅 127.0.0.1，本地分支尚未推送或进入测试环境。'),
       S('todo', '无生产 SLO / 演练', '尚未做容量、故障恢复、安全、密钥轮换、告警和发布回滚验证。'),

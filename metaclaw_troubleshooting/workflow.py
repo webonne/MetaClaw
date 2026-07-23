@@ -28,6 +28,8 @@ from .models import (
 class WorkflowConflict(RuntimeError):
     """Raised when a requested mutation would skip a required lifecycle gate."""
 
+    code = "workflow_conflict"
+
 
 def _identifier(prefix: str) -> str:
     return f"{prefix}-{uuid4().hex[:12]}"
