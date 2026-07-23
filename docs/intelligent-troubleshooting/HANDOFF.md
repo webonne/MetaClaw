@@ -60,6 +60,7 @@ docs/intelligent-troubleshooting/
 ├── HANDOFF.md                    # 本文件
 ├── executive-summary.html        # 给领导一页纸
 ├── architecture-blueprint.html   # 蓝图 v0.3（16 节，D1–D7 + 落地热力矩阵）
+├── architecture-review.md        # 实施走读复核（无偏差 + G1–G6 缺口清单）
 ├── metaclaw-integration-design.md # D7：MetaClaw 产品集成与分阶段实施合同
 ├── console-prototype.html        # 原型 A：单故障详情
 ├── console-prototype-b.html      # 原型 B：值班驾驶舱
@@ -117,6 +118,25 @@ metaclaw_troubleshooting/
 `sop_kb.json` 已脱敏（Bearer/JWT→`<BEARER_TOKEN>`，查询/JSON token→`<TOKEN>`，IP/人名保留）。
 **若把源表纳入版本管理，务必先脱敏 token。** 已进入 Git 历史的旧快照仍可能保留本次修复前的 token，
 如确认属于有效凭证，应立即轮换；未经明确授权不要擅自改写 Git 历史。
+
+---
+
+## 六·五、架构走读复核结论（2026-07-23，独立复核会话）
+
+对 `metaclaw_troubleshooting` MVP 做了第一性原理走读 + 实跑测试（**38 passed + 7 subtests**）。
+**结论：无架构性偏差，多处比蓝图更严谨**（`anomaly_criteria` 类型化规则引擎、全链路 fail-closed、
+诚实不造空接口假装集成）。四条生命线（安全边界 / 确定性优先 / 人机闸门 / 契约一致性）全部对齐。
+
+**完整结论见 [`architecture-review.md`](./architecture-review.md)**。未推进缺口（后续接续用）：
+
+- **G1** 未命中路 ReAct 式 agent（自主探索 + DQL 白名单沙箱）未实现，`_fallback` 仅 abstain 占位 🟡
+- **G2** MetaClaw 未真接线（LLM 走代理 / 上下文预算 / Skill Evolver），设计空位已声明 🟡
+- **G3** `actor` 是请求体标签、非可信身份，靠 loopback-only 兜底，放网前须接 RBAC/SSO 🟡
+- **G4** `route_to_team` 依赖 `owner_team`（KB 多为空）🟢 ·
+  **G5** collector.status 与规则引擎 signal 两套判断，展示应以规则引擎为准 🟢 ·
+  **G6** L0 数据 blocker（3 路由键冲突 + 103 处字符丢失）待 owner 裁决 + 回源表恢复 🟢
+
+均为 fail-safe 缺口、在设计预期的后续阶段，不改架构即可继续。
 
 ---
 

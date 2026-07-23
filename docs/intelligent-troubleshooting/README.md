@@ -11,6 +11,8 @@
   （确定性 / LLM 兜底）、全过程运转图、三契约、观测云 DQL 取证、L0→L5 演进、部门级平台化、
   编排层与信任工程（自建 orchestrator + MCP、workflow vs ReAct）、上线取信与放权阶梯、
   知识运营机制、决策记录（D1–D7）、风险与修正，以及 15 个能力域 × 6 个落地阶段的热力矩阵。
+- [架构走读复核](./architecture-review.md) — 对 `metaclaw_troubleshooting` MVP 的第一性原理复核：
+  逐条基线对齐（无架构性偏差，38 测试通过）+ G1–G6 待推进缺口清单。
 - [MetaClaw 集成设计](./metaclaw-integration-design.md) — D7 的实施合同：产品入口一体、领域 Module 与运行时
   隔离，通过 Adapter 复用 reasoning / knowledge，并明确统一启动、配置、鉴权、持久化与分阶段准入。
 
