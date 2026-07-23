@@ -12,12 +12,40 @@
   编排层与信任工程（自建 orchestrator + MCP、workflow vs ReAct）、上线取信与放权阶梯、
   知识运营机制、决策记录（D1–D6）、风险与修正。
 
-### 交互原型（单文件、零依赖，浏览器直接打开）
+### 交互原型与 MVP 工作台
 
 - [版式 A · 单故障详情页](./console-prototype.html) — IM 卡片 + 故障上下文 Web 台。
 - [版式 B · 值班驾驶舱](./console-prototype-b.html) — 三栏应用式（左队列/中处置/右证据）。
-- [故障工作台（列表→详情）](./console-workbench.html) — 版式 A 的列表入口版；含系统维度、
-  手动录入（贴日志/现象→LLM 抽取）、按错误码的自主档徽标（影子/建议/自动）。
+- [故障工作台（列表→详情）](./console-workbench.html) — 通过 `/workbench` 访问时使用排障 API；
+  直接打开文件时保留离线样例。支持手动录入、确认结论和生产写操作人工批准。MVP 只记录批准，
+  不连接生产写执行器。
+
+## 运行首条竖切 MVP
+
+当前竖切固定使用 `903001` fixture，目的是先验证端到端合同与安全边界，不代表观测云 DQL 已在内网核实。
+在仓库根目录运行：
+
+```bash
+uv run --no-project --with fastapi --with uvicorn python -m metaclaw_troubleshooting
+```
+
+然后访问：
+
+- 工作台：`http://127.0.0.1:18080/workbench`
+- API 文档：`http://127.0.0.1:18080/docs`
+- 健康检查：`http://127.0.0.1:18080/healthz`
+
+核心接口为 `GET/POST /v1/troubleshooting/diagnoses`、诊断确认接口，以及 action 人工批准接口。
+`POST .../execute` 在当前 MVP 中固定返回 `409`，用于证明生产写操作无法从页面或 API 被误执行。
+默认 `903001` SOP 保持 `draft/verified=false`：工作台只展示影子取证，隐藏正式根因与恢复动作；只有测试中显式构造
+`approved/verified=true` 的 SOP 才会验证“人工批准但不执行”的合同。取证工具超时会降级为人工取证，不返回 500。
+
+运行竖切测试：
+
+```bash
+uv run --no-project --with fastapi --with httpx \
+  python -m unittest tests.test_troubleshooting_mvp -v
+```
 
 ## L0 知识底座（已启动）
 
@@ -43,8 +71,14 @@ python3 docs/intelligent-troubleshooting/l0/clean_sop_kb.py \
 
 ## 当前状态
 
-架构已收敛（v0.3，D1–D6 已锁定）。L0 知识底座已启动。
+架构已收敛（v0.3，D1–D6 已锁定）。L0 知识底座已启动；`903001` 的本地 fixture 竖切已打通：
+确定性路由、4 项只读取证、数据驱动判据、统一 `Diagnosis` 合同、服务端复合幂等、工作台/API 联动，
+以及经审核 SOP 的生产写操作人工批准合同。
+
+该竖切仍是开发态：观测云字段与阈值尚未联调核实，真实 Evidence/MCP 适配器与受控 LLM fallback 尚未接入，
+生产写执行器明确保持断开。
+
 清洗/质量闸门已落地，当前发现 3 个路由键对应多个业务上下文，且旧解析器已造成 103 处疑似
 字符丢失（IP / 组件版本 / 联系人手机号 / `limit`、`skip` 调用），需 owner 裁决并回源表恢复；工具默认拒绝把
-带阻断项的结构化结果覆盖 canonical KB。下一步：处理质量报告阻断项 → 审核候选条目 → 给 `903001` 补
-`evidence_dql`/`anomaly_criteria` → 接观测云真实取证 → 建历史回归集接影子模式。
+带阻断项的结构化结果覆盖 canonical KB。下一步：处理质量报告阻断项 → 审核候选条目 → 内网核实
+`903001` 的 `evidence_dql`/`anomaly_criteria` → 接观测云真实取证 → 建历史回归集接影子模式。
