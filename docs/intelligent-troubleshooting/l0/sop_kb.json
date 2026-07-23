@@ -1291,7 +1291,7 @@
     "action_type": "auto_readonly"
    },
    {
-    "text": "例如：{\"url\":\"https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/channel/updateFinish?app=CSDP\\u0026time=1770258988\\u0026token=502bd552710232c4f034af7b2845a58b\",\"header\":{\"Authorization\":\"Bearer <BEARER_TOKEN>\"},\"content\":{\"loginPrmUserId\":\"10661735\",\"loginPrmUserName\":\"麦俊峰\",\"loginPrmUserComId\":\"SI045737\",\"workOrderId\":\"T2026011601448\",\"workOrderCode\":\"T2026011601448\",\"remark\":\"\",\"syncCustomerDetail\":\"1.10集群和15集群存储资源紧张，将已关机的1TB以上的虚拟机迁移到236集群上\"},\"error\":\"return data code is not ok! 请录入工时后才能完结工单\"}",
+    "text": "例如：{\"url\":\"https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/channel/updateFinish?app=CSDP\\u0026time=1770258988\\u0026token=<TOKEN>\",\"header\":{\"Authorization\":\"Bearer <BEARER_TOKEN>\"},\"content\":{\"loginPrmUserId\":\"10661735\",\"loginPrmUserName\":\"麦俊峰\",\"loginPrmUserComId\":\"SI045737\",\"workOrderId\":\"T2026011601448\",\"workOrderCode\":\"T2026011601448\",\"remark\":\"\",\"syncCustomerDetail\":\"1.10集群和15集群存储资源紧张，将已关机的1TB以上的虚拟机迁移到236集群上\"},\"error\":\"return data code is not ok! 请录入工时后才能完结工单\"}",
     "action_type": "manual_unknown"
    },
    {
@@ -1303,7 +1303,7 @@
     "action_type": "manual_write"
    },
    {
-    "text": "--url 'https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/save?app=CSDP%2Fu0026time%3D1770258988%2Fu0026token%3D502bd552710232c4f034af7b2845a58b' \\",
+    "text": "--url 'https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/save?app=CSDP%2Fu0026time%3D1770258988%2Fu0026token%3D<TOKEN>' \\",
     "action_type": "manual_unknown"
    },
    {
@@ -4752,7 +4752,7 @@
     "action_type": "auto_readonly"
    },
    {
-    "text": "例如：{\"url\":\"https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/channel/updateFinish?app=CSDP\\u0026time=1770258988\\u0026token=502bd552710232c4f034af7b2845a58b\",\"header\":{\"Authorization\":\"Bearer <BEARER_TOKEN>\"},\"content\":{\"loginPrmUserId\":\"10661735\",\"loginPrmUserName\":\"麦俊峰\",\"loginPrmUserComId\":\"SI045737\",\"workOrderId\":\"T2026011601448\",\"workOrderCode\":\"T2026011601448\",\"remark\":\"\",\"syncCustomerDetail\":\"1.10集群和15集群存储资源紧张，将已关机的1TB以上的虚拟机迁移到236集群上\"},\"error\":\"return data code is not ok! 请录入工时后才能完结工单\"}",
+    "text": "例如：{\"url\":\"https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/channel/updateFinish?app=CSDP\\u0026time=1770258988\\u0026token=<TOKEN>\",\"header\":{\"Authorization\":\"Bearer <BEARER_TOKEN>\"},\"content\":{\"loginPrmUserId\":\"10661735\",\"loginPrmUserName\":\"麦俊峰\",\"loginPrmUserComId\":\"SI045737\",\"workOrderId\":\"T2026011601448\",\"workOrderCode\":\"T2026011601448\",\"remark\":\"\",\"syncCustomerDetail\":\"1.10集群和15集群存储资源紧张，将已关机的1TB以上的虚拟机迁移到236集群上\"},\"error\":\"return data code is not ok! 请录入工时后才能完结工单\"}",
     "action_type": "manual_unknown"
    },
    {
@@ -4764,7 +4764,7 @@
     "action_type": "manual_write"
    },
    {
-    "text": "--url 'https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/save?app=CSDP%2Fu0026time%3D1770258988%2Fu0026token%3D502bd552710232c4f034af7b2845a58b' \\",
+    "text": "--url 'https://it-gw.sangfor.com/icare/api/sf-icare-openapi/openapi/case/workOrderPhase/save?app=CSDP%2Fu0026time%3D1770258988%2Fu0026token%3D<TOKEN>' \\",
     "action_type": "manual_unknown"
    },
    {

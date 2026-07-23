@@ -49,13 +49,15 @@ all = [
 
 [project.scripts]
 metaclaw = "metaclaw.cli:metaclaw"
+metaclaw-troubleshooting = "metaclaw_troubleshooting.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["metaclaw*"]
+include = ["metaclaw*", "metaclaw_troubleshooting*"]
 
 [tool.setuptools.package-data]
 metaclaw = []
+metaclaw_troubleshooting = ["static/*.html", "migrations/*.sql"]
 
 [tool.ruff]
 line-length = 120
