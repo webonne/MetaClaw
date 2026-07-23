@@ -10,7 +10,9 @@
 - [架构与演进蓝图 v0.3](./architecture-blueprint.html) — 完整设计（16 节）：分层架构、双路脊柱
   （确定性 / LLM 兜底）、全过程运转图、三契约、观测云 DQL 取证、L0→L5 演进、部门级平台化、
   编排层与信任工程（自建 orchestrator + MCP、workflow vs ReAct）、上线取信与放权阶梯、
-  知识运营机制、决策记录（D1–D6）、风险与修正，以及 15 个能力域 × 6 个落地阶段的热力矩阵。
+  知识运营机制、决策记录（D1–D7）、风险与修正，以及 15 个能力域 × 6 个落地阶段的热力矩阵。
+- [MetaClaw 集成设计](./metaclaw-integration-design.md) — D7 的实施合同：产品入口一体、领域 Module 与运行时
+  隔离，通过 Adapter 复用 reasoning / knowledge，并明确统一启动、配置、鉴权、持久化与分阶段准入。
 
 ### 交互原型与 MVP 工作台
 
@@ -90,7 +92,7 @@ python3 docs/intelligent-troubleshooting/l0/clean_sop_kb.py \
 
 ## 当前状态
 
-架构已收敛（v0.3，D1–D6 已锁定）。L0 知识底座已启动；`903001` 的本地 fixture 竖切已打通：
+架构已收敛（v0.3，D1–D7 已锁定）。L0 知识底座已启动；`903001` 的本地 fixture 竖切已打通：
 确定性路由、4 项只读取证、数据驱动判据、统一 `Diagnosis` 合同、服务端复合幂等、工作台/API 联动，
 以及从诊断确认、结构化转派、人工批准、外部处置登记、恢复验证到关闭归档和知识候选的完整演练闭环。
 

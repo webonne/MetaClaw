@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
 <title>IT 智能排障系统 · 架构与演进蓝图</title>
 <style>
   :root{
@@ -1106,7 +1107,7 @@
     <div class="sec-head">
       <div class="sec-num">13</div>
       <div class="eyebrow">决策记录</div>
-      <h2>已锁定的六个架构决定</h2>
+      <h2>已锁定的七个架构决定</h2>
     </div>
     <div class="decisions" style="margin-top:18px">
       <div class="dec">
@@ -1155,6 +1156,14 @@
           <h4>D6 · 知识运营 = 沉淀嵌进流程 + 贡献者受益 + 专家只审核</h4>
           <p>补全嵌进处置流程（沉淀即点确认）；三来源（存量挖掘 / 增量沉淀 / 主动补全 backlog）；生命周期 candidate→approved→deprecated + version；否决/连续失败触发复审。</p>
           <div class="imp"><b>下游约束</b> 分层审核归属；覆盖率/可自动化率进团队 KPI + 贡献看板；高频优先的持久战，不承诺一步到位（详见 §12）。</div>
+        </div>
+      </div>
+      <div class="dec">
+        <div class="lock">✓</div>
+        <div>
+          <h4>D7 · MetaClaw 集成 = 产品入口一体、领域 Module 与运行时分开</h4>
+          <p>同仓、同发行包、统一启动；排障先保持独立进程与 loopback，通过 ReasoningGateway / KnowledgePublisher Adapter 复用 MetaClaw，不继承或侵入核心内核。</p>
+          <div class="imp"><b>下游约束</b> Core 不导入排障领域模型；排障只依赖稳定 HTTP 契约；RBAC、持久化、静态资源打包与非阻塞真实 Adapter 完成前，不并入 Core FastAPI。实施合同见 <a href="./metaclaw-integration-design.md">MetaClaw 集成设计</a>。</div>
         </div>
       </div>
     </div>

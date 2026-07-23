@@ -16,7 +16,7 @@
 
 ---
 
-## 二、六个已锁定决策（D1–D6）
+## 二、七个已锁定决策（D1–D7）
 
 | # | 决策 | 要点 |
 |---|---|---|
@@ -26,6 +26,7 @@
 | **D4** | 编排 = 自建 orchestrator（LLM 走 MetaClaw）+ 工具走 MCP | orchestrator 跑循环/调 MCP/输出校验；每次 LLM 调用经 MetaClaw；SOP 分两层 |
 | **D5** | 上线取信 = 影子 + 历史回归集 + 放权阶梯 | S0 影子→S1 建议→S2 只读自动取证→S3 半自动；写操作永不自动；按错误码逐格毕业 |
 | **D6** | 知识运营 = 沉淀嵌进流程 + 贡献者受益 + 专家只审核 | 三来源（存量挖掘/增量沉淀/主动补全 backlog）；覆盖率进 KPI |
+| **D7** | MetaClaw 集成 = 产品一体、Module 与运行时分开 | 同仓同包、统一启动；排障先独立进程，通过 reasoning / knowledge Adapter 复用 MetaClaw；RBAC、持久化完成前保持 loopback |
 
 ---
 
@@ -58,7 +59,8 @@ docs/intelligent-troubleshooting/
 ├── README.md                     # 索引
 ├── HANDOFF.md                    # 本文件
 ├── executive-summary.html        # 给领导一页纸
-├── architecture-blueprint.html   # 蓝图 v0.3（16 节，D1–D6 + 落地热力矩阵）
+├── architecture-blueprint.html   # 蓝图 v0.3（16 节，D1–D7 + 落地热力矩阵）
+├── metaclaw-integration-design.md # D7：MetaClaw 产品集成与分阶段实施合同
 ├── console-prototype.html        # 原型 A：单故障详情
 ├── console-prototype-b.html      # 原型 B：值班驾驶舱
 ├── console-workbench.html        # 工作台：列表→详情 + 系统维度 + 手动录入 + 自主档徽标
@@ -93,7 +95,8 @@ docs/intelligent-troubleshooting/
 
 - 把 `903001.md` 的模式**复制到其他高频码**（901002 微信 / 2000001 渠道 / 801008 主数据…backlog 见 inventory_report）。
 - 用 owner 结论处理 `quality_report.md` 的 3 个 `KEY_COLLISION`，再执行结构化清洗落库。
-- 起草 **orchestrator 骨架**（LangGraph 推荐；三约束：LLM base_url 指向 MetaClaw / 结构化输出+校验 / human-in-the-loop + MCP）。
+- 按 D7 收口 **TroubleshootingModule** façade，抽出 DiagnosisRepository / ReasoningGateway / KnowledgePublisher，先保持行为不变。
+- 把工作台迁入 Python package-data，并补 SQLite、outbox、`/readyz`，确保 wheel 安装和重启恢复可验证。
 - 起草 **观测云 MCP server** 与 **SOP 查询 MCP server** 的接口定义。
 
 ## ⚠️ 敏感数据说明
@@ -111,4 +114,4 @@ docs/intelligent-troubleshooting/
   以后以用户当前明确选择的分支为准。
 - 新提交沿用仓库现有提交说明约定；不要冒用并未参与本轮工作的 Co-Authored-By 身份。
 - 不擅自开 PR。
-- 改蓝图注意 §编号连续（当前 01–15）；改完可用 git 提交，浏览器验证渲染。
+- 改蓝图注意 §编号连续（当前 01–16）；改完可用 git 提交，浏览器验证渲染。
