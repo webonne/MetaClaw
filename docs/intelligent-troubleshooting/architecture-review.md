@@ -43,6 +43,7 @@
 | **G4** | `route_to_team` 依赖 `owner_team`，KB 多数为空 | 🟢 低 | 有 human_contact 动作但转派目标可能空 | 知识补全 owner 归属 |
 | **G5** | `EvidenceCollector.status` 与规则引擎 `triggered_signals` 两套判断 | 🟢 低 | 权威应为规则引擎 | 确认工作台展示"是否异常"以规则引擎为准，避免口径打架 |
 | **G6** | L0 数据 blocker 未清（3 路由键冲突 + 103 处字符丢失） | 🟢 低（数据侧） | 清洗器已 fail-closed 拒绝落盘 | owner 裁决一码多义 + 回源表恢复被截断字符 |
+| **G7** | 证据源当前与 Guance/fixture 耦合（`EvidenceQuery.query` 是 DQL 串） | 🟡 中 | 已出 D8 设计（多平台 OAL），未重构 | 落 `EvidenceRequest`/`SourceAdapter`/`Router` + 归一词汇表；见 `observability-abstraction-design.md` |
 
 ## 四、总评
 

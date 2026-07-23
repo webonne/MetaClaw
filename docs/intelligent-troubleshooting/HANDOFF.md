@@ -16,7 +16,7 @@
 
 ---
 
-## 二、七个已锁定决策（D1–D7）
+## 二、八个已锁定决策（D1–D8）
 
 | # | 决策 | 要点 |
 |---|---|---|
@@ -27,6 +27,7 @@
 | **D5** | 上线取信 = 影子 + 历史回归集 + 放权阶梯 | S0 影子→S1 建议→S2 只读自动取证→S3 半自动；写操作永不自动；按错误码逐格毕业 |
 | **D6** | 知识运营 = 沉淀嵌进流程 + 贡献者受益 + 专家只审核 | 三来源（存量挖掘/增量沉淀/主动补全 backlog）；覆盖率进 KPI |
 | **D7** | MetaClaw 集成 = 产品一体、Module 与运行时分开 | 同仓同包、统一启动；排障先独立进程，通过 reasoning / knowledge Adapter 复用 MetaClaw；RBAC/可信身份完成前保持 loopback |
+| **D8** | 证据源开放适配（Observability Abstraction Layer） | SOP 存平台无关「意图」(EvidenceRequest)，绑定放注册表(D-A)，按 system+signal 路由(D-B)，各适配器归一到 canonical `observed` 字段(D-C)；观测云是首个适配器，Zabbix/Prometheus/日志平台可插拔加入、零改 SOP。详见 `observability-abstraction-design.md` |
 
 ---
 
@@ -36,8 +37,9 @@
 - **双路脊柱**：命中→确定性 workflow（code-planned）；未命中→ReAct 式 agent（套笼子：DQL 白名单+低置信+人工确认）。
 - **三契约**：`IncidentContext`（含 intake_source/completeness/raw_input）→ `SopEntry`（key=(system,error_code)，含 evidence_dql/anomaly_criteria/action_type）→ `Diagnosis`（唯一对外契约）。
 - **两层 SOP**：结构化 KB（确定性数据，orchestrator 用 MCP 工具查，凭证不入模型）＋ MetaClaw skill（方法论，注入 prompt）。
-- **取证 = 观测云 DQL**：语法 `命名空间::数据源:(字段){过滤}[时间范围]`；命名空间 L::日志 M::指标 T::链路 D::拨测。
-  端点 `df-openapi.prd.sangfor.com/api/v1/df/query_data_v1`，`DF-API-KEY` 鉴权（内网，沙箱不可达）。
+- **取证 = 可插拔多平台（D8）**：SOP 存平台无关意图，各平台适配器归一到 canonical `observed` 字段供规则引擎判读。
+  **观测云是首个适配器**——DQL 语法 `命名空间::数据源:(字段){过滤}[时间范围]`（L::日志 M::指标 T::链路 D::拨测），
+  端点 `df-openapi.prd.sangfor.com/api/v1/df/query_data_v1`，`DF-API-KEY` 鉴权（内网，沙箱不可达）。后续可接 Zabbix/Prometheus/日志平台。
 - **信任工程五约束**：①确定性优先(LLM 不生成恢复动作) ②强制引用证据 ③结构化输出+校验闸门 ④置信度校准+abstain ⑤上下文预算。
 - **intake**：webhook + 手动录入（贴日志/现象→LLM 抽取 error_code）；completeness 驱动路由；幂等键 (system,error_code,service,时间桶) + 疑似重复提示。
 
@@ -60,8 +62,9 @@ docs/intelligent-troubleshooting/
 ├── HANDOFF.md                    # 本文件
 ├── executive-summary.html        # 给领导一页纸
 ├── architecture-blueprint.html   # 蓝图 v0.3（16 节，D1–D7 + 落地热力矩阵）
-├── architecture-review.md        # 实施走读复核（无偏差 + G1–G6 缺口清单）
+├── architecture-review.md        # 实施走读复核（无偏差 + G1–G7 缺口清单）
 ├── metaclaw-integration-design.md # D7：MetaClaw 产品集成与分阶段实施合同
+├── observability-abstraction-design.md # D8：证据源开放适配（多平台 OAL）契约
 ├── console-prototype.html        # 原型 A：单故障详情
 ├── console-prototype-b.html      # 原型 B：值班驾驶舱
 ├── console-workbench.html        # 文档入口：跳转到包内正式工作台
@@ -135,6 +138,7 @@ metaclaw_troubleshooting/
 - **G4** `route_to_team` 依赖 `owner_team`（KB 多为空）🟢 ·
   **G5** collector.status 与规则引擎 signal 两套判断，展示应以规则引擎为准 🟢 ·
   **G6** L0 数据 blocker（3 路由键冲突 + 103 处字符丢失）待 owner 裁决 + 回源表恢复 🟢
+- **G7** 证据源当前与 Guance/fixture 耦合；已出 **D8** 多平台 OAL 设计，待重构 `EvidenceQuery→EvidenceRequest` + `SourceAdapter`/`Router` + 归一词汇表 🟡
 
 均为 fail-safe 缺口、在设计预期的后续阶段，不改架构即可继续。
 

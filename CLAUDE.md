@@ -5,7 +5,7 @@
 
 ## 接续这项工作，先读
 
-1. **`docs/intelligent-troubleshooting/HANDOFF.md`** —— 完整会话记忆：7 个已锁定决策（D1–D7）、架构骨架、
+1. **`docs/intelligent-troubleshooting/HANDOFF.md`** —— 完整会话记忆：8 个已锁定决策（D1–D8）、架构骨架、
    主要矛盾、已交付清单、下一步。**必读，一份就够上手。**
 2. `docs/intelligent-troubleshooting/architecture-blueprint.html` —— 完整蓝图 v0.3（16 节）。
 3. `docs/intelligent-troubleshooting/l0/` —— 已落地的 L0 结构化 SOP 库 + 家底盘点 + 903001 取证草案。
@@ -16,6 +16,7 @@
 - 编排：自建轻量 orchestrator + 工具走 MCP；SOP 分两层（结构化 KB / MetaClaw skill）。
 - 系统天花板 = 知识质量（安全口径实测 30/146、约 21% 为只读自动化候选，且仍有质量阻断）；
   不承诺"上线即全自动"，走影子→放权阶梯逐格毕业。
+- 证据源为可插拔多平台适配（D8·Observability Abstraction Layer）；观测云是首个适配器，后续可接 Zabbix/Prometheus/日志平台。
 - 观测云 DQL 端点为内网（`*.prd.sangfor.com`），需内网环境联调。
 - 源表 xlsx 含真实 token/IP/人名，未入库；`sop_kb.json` 已脱敏。
 
