@@ -26,7 +26,7 @@
 | **D4** | 编排 = 自建 orchestrator（LLM 走 MetaClaw）+ 工具走 MCP | orchestrator 跑循环/调 MCP/输出校验；每次 LLM 调用经 MetaClaw；SOP 分两层 |
 | **D5** | 上线取信 = 影子 + 历史回归集 + 放权阶梯 | S0 影子→S1 建议→S2 只读自动取证→S3 半自动；写操作永不自动；按错误码逐格毕业 |
 | **D6** | 知识运营 = 沉淀嵌进流程 + 贡献者受益 + 专家只审核 | 三来源（存量挖掘/增量沉淀/主动补全 backlog）；覆盖率进 KPI |
-| **D7** | MetaClaw 集成 = 产品一体、Module 与运行时分开 | 同仓同包、统一启动；排障先独立进程，通过 reasoning / knowledge Adapter 复用 MetaClaw；RBAC、持久化完成前保持 loopback |
+| **D7** | MetaClaw 集成 = 产品一体、Module 与运行时分开 | 同仓同包、统一启动；排障先独立进程，通过 reasoning / knowledge Adapter 复用 MetaClaw；RBAC/可信身份完成前保持 loopback |
 
 ---
 
@@ -63,7 +63,7 @@ docs/intelligent-troubleshooting/
 ├── metaclaw-integration-design.md # D7：MetaClaw 产品集成与分阶段实施合同
 ├── console-prototype.html        # 原型 A：单故障详情
 ├── console-prototype-b.html      # 原型 B：值班驾驶舱
-├── console-workbench.html        # 工作台：列表→详情 + 系统维度 + 手动录入 + 自主档徽标
+├── console-workbench.html        # 文档入口：跳转到包内正式工作台
 └── l0/
     ├── sop_kb.json               # 146 错误码结构化 SOP 库（脱敏，status=candidate）
     ├── inventory_report.md       # 家底盘点
@@ -71,6 +71,12 @@ docs/intelligent-troubleshooting/
     ├── clean_sop_kb.py           # 保守清洗、脱敏、质量闸门 CLI
     ├── quality_report.md         # 当前阻断项与人工复核队列
     └── activated/903001.md       # 首个取证草案（evidence_dql+anomaly_criteria，待联调核实）
+
+metaclaw_troubleshooting/
+├── static/console-workbench.html # wheel 内正式工作台：列表→详情 + 主流程处置
+└── migrations/
+    ├── 001_initial.sql           # Diagnosis 聚合、复合幂等与知识 Outbox
+    └── 002_outbox_delivery.sql   # 租约 claim / ack / failure retry
 ```
 - **原型均单文件零依赖**，浏览器直接打开。（本会话环境 Artifact 在线发布被拦，故走 git + 文件推送。）
 - **方法论 skills** 已装在 `.claude/skills/`（qiushi-skill：矛盾分析/调查研究/批评与自我批评等，下个会话可 `/` 调用）。
@@ -79,10 +85,12 @@ docs/intelligent-troubleshooting/
 - **当前数据阻断**：`101014`、`101034`、`101040` 在拆分多码单元格后均对应多个业务上下文，
   与 D1 `(system,error_code)` 唯一路由前提冲突；另有 103 处疑似被旧解析器截断的 IP、组件版本、
   联系人手机号、`limit/skip` 调用。清洗器把两类问题都设为阻断并拒绝自动落盘，详见 `quality_report.md`。
-- **D7 P1 核心收口已落地**：HTTP 已收口到 `TroubleshootingModule`；新增 `DiagnosisRepository` 与
-  `InMemoryDiagnosisRepository`，统一承担副本隔离、5 分钟桶幂等和命令原子更新；领域错误已带稳定机器码。
-  `ReasoningGateway` / `KnowledgePublisher` 不提前创建空 Protocol，等 P2 outbox 和 P3 MetaClaw Adapter
-  出现后再落地。当前 `actor` 仍是请求体审计标签而非可信身份，官方启动命令在 P5 认证前硬拒绝非 loopback。
+- **D7 P1 + P2 已落地**：HTTP 已收口到 `TroubleshootingModule`；`DiagnosisRepository` 统一承担
+  副本隔离、5 分钟桶幂等和命令原子更新。运行时默认使用 `SQLiteDiagnosisRepository`，schema migration v2
+  持久化完整 Diagnosis 聚合与知识发布 Outbox；关闭事务与候选入队原子提交，消费合同支持租约 claim、ack、
+  失败重试和唯一候选约束。工作台与 SQL 已进入 wheel package-data，`/readyz`、capabilities、503 错误 ID
+  可追踪；重启恢复和 wheel 安装已实测。`KnowledgePublisher` 仍等 P3 真实 MetaClaw Adapter 再抽取。
+  当前 `actor` 仍是请求体审计标签而非可信身份，官方启动命令在 P5 认证前硬拒绝非 loopback。
 
 ---
 
@@ -99,8 +107,8 @@ docs/intelligent-troubleshooting/
 
 - 把 `903001.md` 的模式**复制到其他高频码**（901002 微信 / 2000001 渠道 / 801008 主数据…backlog 见 inventory_report）。
 - 用 owner 结论处理 `quality_report.md` 的 3 个 `KEY_COLLISION`，再执行结构化清洗落库。
-- 开始 D7 P2：把工作台迁入 Python package-data，并补 SQLite、schema migration、outbox、`/readyz`，
-  确保 wheel 安装和重启恢复可验证。
+- 起草 P3 的 `MetaClawReasoningAdapter` / `MetaClawKnowledgeAdapter` 外部合同；只有真实调用方出现时才抽取
+  `ReasoningGateway` / `KnowledgePublisher` Protocol，并让 Publisher 消费现有租约 Outbox。
 - 起草 **观测云 MCP server** 与 **SOP 查询 MCP server** 的接口定义。
 
 ## ⚠️ 敏感数据说明

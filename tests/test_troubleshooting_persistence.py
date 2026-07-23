@@ -1,8 +1,12 @@
 import sqlite3
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from importlib import resources
 from pathlib import Path
+from threading import Event, Timer
+from time import monotonic
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -29,7 +33,11 @@ from metaclaw_troubleshooting.module import (
 )
 from metaclaw_troubleshooting.orchestrator import TroubleshootingOrchestrator
 from metaclaw_troubleshooting.ports import RepositoryReadiness, RepositoryUnavailable
-from metaclaw_troubleshooting.repository import InMemorySopRepository, SQLiteDiagnosisRepository
+from metaclaw_troubleshooting.repository import (
+    InMemoryDiagnosisRepository,
+    InMemorySopRepository,
+    SQLiteDiagnosisRepository,
+)
 
 
 def build_approved_fixture_orchestrator() -> TroubleshootingOrchestrator:
@@ -132,7 +140,7 @@ class SQLiteDiagnosisRepositoryTests(unittest.TestCase):
         self.assertTrue(readiness.ready)
         self.assertEqual(readiness.adapter, "sqlite")
         self.assertTrue(readiness.persistent)
-        self.assertEqual(readiness.schema_version, 1)
+        self.assertEqual(readiness.schema_version, 2)
         self.assertEqual(readiness.pending_publications, 1)
         reopened.close()
 
@@ -201,6 +209,129 @@ class SQLiteDiagnosisRepositoryTests(unittest.TestCase):
         self.assertEqual(repository.pending_publications(), [])
         repository.close()
 
+    def test_publication_claim_failure_retry_and_ack_are_persistent(self):
+        first_repository = SQLiteDiagnosisRepository(self.database_path)
+        module = TroubleshootingModule(build_approved_fixture_orchestrator(), first_repository)
+        closed = run_closed_flow(module, incident_id="outbox-delivery")
+        publication_id = f"publication-{closed.knowledge_candidates[0].candidate_id}"
+
+        claimed = first_repository.claim_publications(
+            worker_id="publisher-a",
+            limit=1,
+            lease_seconds=60,
+        )
+        self.assertEqual(len(claimed), 1)
+        self.assertEqual(claimed[0].publication_id, publication_id)
+        self.assertEqual(claimed[0].attempts, 1)
+        self.assertEqual(claimed[0].claimed_by, "publisher-a")
+        self.assertIsNotNone(claimed[0].lease_expires_at)
+
+        competing_repository = SQLiteDiagnosisRepository(self.database_path)
+        self.assertEqual(
+            competing_repository.claim_publications(
+                worker_id="publisher-b",
+                limit=1,
+                lease_seconds=60,
+            ),
+            [],
+        )
+        self.assertFalse(
+            competing_repository.mark_publication_published(
+                publication_id,
+                worker_id="publisher-b",
+            )
+        )
+        self.assertTrue(
+            first_repository.mark_publication_failed(
+                publication_id,
+                worker_id="publisher-a",
+                error="MetaClaw unavailable",
+            )
+        )
+        competing_repository.close()
+        first_repository.close()
+
+        reopened = SQLiteDiagnosisRepository(self.database_path)
+        retried = reopened.claim_publications(
+            worker_id="publisher-b",
+            limit=1,
+            lease_seconds=60,
+        )
+        self.assertEqual(len(retried), 1)
+        self.assertEqual(retried[0].attempts, 2)
+        self.assertEqual(retried[0].last_error, "MetaClaw unavailable")
+        self.assertEqual(retried[0].claimed_by, "publisher-b")
+        self.assertTrue(
+            reopened.mark_publication_published(
+                publication_id,
+                worker_id="publisher-b",
+            )
+        )
+        self.assertEqual(reopened.pending_publications(), [])
+        self.assertEqual(reopened.readiness().pending_publications, 0)
+        reopened.close()
+
+    def test_migration_failure_closes_partially_initialized_connection(self):
+        captured = {}
+
+        def fail_migration(repository):
+            captured["connection"] = repository._connection
+            raise RepositoryUnavailable("simulated migration failure")
+
+        with patch.object(SQLiteDiagnosisRepository, "_run_migrations", fail_migration):
+            with self.assertRaises(RepositoryUnavailable):
+                SQLiteDiagnosisRepository(self.database_path)
+
+        with self.assertRaises(sqlite3.ProgrammingError):
+            captured["connection"].execute("SELECT 1")
+
+
+class InMemoryDiagnosisRepositoryTests(unittest.TestCase):
+    def test_readiness_counts_all_publications_beyond_default_page_limit(self):
+        repository = InMemoryDiagnosisRepository()
+        module = TroubleshootingModule(build_approved_fixture_orchestrator(), repository)
+        closed = run_closed_flow(module, incident_id="memory-outbox-count")
+        for index in range(100):
+            clone = closed.model_copy(deep=True)
+            clone.diagnosis_id = f"diag-memory-clone-{index}"
+            clone.case_id = f"case-memory-clone-{index}"
+            clone.run_id = f"run-memory-clone-{index}"
+            clone.rehearsal = True
+            candidate = clone.knowledge_candidates[0]
+            candidate.candidate_id = f"candidate-memory-clone-{index}"
+            candidate.source_diagnosis_id = clone.diagnosis_id
+            candidate.source_case_id = clone.case_id
+            candidate.source_run_id = clone.run_id
+            repository.add(clone)
+
+        self.assertEqual(len(repository.pending_publications()), 100)
+        self.assertEqual(repository.readiness().pending_publications, 101)
+
+    def test_publication_delivery_contract_matches_sqlite_adapter(self):
+        repository = InMemoryDiagnosisRepository()
+        module = TroubleshootingModule(build_approved_fixture_orchestrator(), repository)
+        closed = run_closed_flow(module, incident_id="memory-outbox-delivery")
+        publication_id = f"publication-{closed.knowledge_candidates[0].candidate_id}"
+
+        claimed = repository.claim_publications(worker_id="publisher-a", limit=1, lease_seconds=60)
+        self.assertEqual(claimed[0].attempts, 1)
+        self.assertEqual(claimed[0].claimed_by, "publisher-a")
+        self.assertEqual(
+            repository.claim_publications(worker_id="publisher-b", limit=1, lease_seconds=60),
+            [],
+        )
+        self.assertTrue(
+            repository.mark_publication_failed(
+                publication_id,
+                worker_id="publisher-a",
+                error="temporary failure",
+            )
+        )
+        retried = repository.claim_publications(worker_id="publisher-b", limit=1, lease_seconds=60)
+        self.assertEqual(retried[0].attempts, 2)
+        self.assertTrue(repository.mark_publication_published(publication_id, worker_id="publisher-b"))
+        self.assertEqual(repository.pending_publications(), [])
+
 
 class UnavailableDiagnosisRepository:
     def add(self, _diagnosis):
@@ -227,6 +358,19 @@ class UnavailableDiagnosisRepository:
             pending_publications=None,
             detail="simulated storage outage",
         )
+
+
+class BlockingDiagnosisRepository(InMemoryDiagnosisRepository):
+    def __init__(self):
+        super().__init__()
+        self.write_started = Event()
+        self.release_write = Event()
+
+    def add(self, diagnosis):
+        self.write_started.set()
+        if not self.release_write.wait(timeout=3):
+            raise TimeoutError("test did not release repository write")
+        return super().add(diagnosis)
 
 
 class TroubleshootingPersistenceApiTests(unittest.TestCase):
@@ -314,16 +458,17 @@ class TroubleshootingPersistenceApiTests(unittest.TestCase):
         )
         client = TestClient(app)
 
-        ready = client.get("/readyz")
-        created = client.post(
-            "/v1/troubleshooting/diagnoses",
-            json={
-                "incident_id": "storage-down",
-                "system": "CSDP",
-                "service": "csdp-wechat",
-                "error_code": "903001",
-            },
-        )
+        with self.assertLogs("metaclaw_troubleshooting.api", level="ERROR") as captured_logs:
+            ready = client.get("/readyz")
+            created = client.post(
+                "/v1/troubleshooting/diagnoses",
+                json={
+                    "incident_id": "storage-down",
+                    "system": "CSDP",
+                    "service": "csdp-wechat",
+                    "error_code": "903001",
+                },
+            )
 
         self.assertEqual(ready.status_code, 503)
         self.assertEqual(ready.json()["code"], "storage_unavailable")
@@ -331,6 +476,34 @@ class TroubleshootingPersistenceApiTests(unittest.TestCase):
         self.assertEqual(created.status_code, 503)
         self.assertEqual(created.json()["code"], "storage_unavailable")
         self.assertIn("error_id", created.json())
+        joined_logs = "\n".join(captured_logs.output)
+        self.assertIn(ready.json()["error_id"], joined_logs)
+        self.assertIn(created.json()["error_id"], joined_logs)
+
+    def test_blocking_repository_write_does_not_block_healthz(self):
+        repository = BlockingDiagnosisRepository()
+        app = create_app(seed_demo=False, diagnosis_repository=repository)
+        payload = {
+            "incident_id": "slow-storage",
+            "system": "CSDP",
+            "service": "csdp-wechat",
+            "error_code": "903001",
+        }
+
+        with TestClient(app) as client, ThreadPoolExecutor(max_workers=1) as executor:
+            creation = executor.submit(client.post, "/v1/troubleshooting/diagnoses", json=payload)
+            self.assertTrue(repository.write_started.wait(timeout=1))
+            release_timer = Timer(1, repository.release_write.set)
+            release_timer.start()
+            started_at = monotonic()
+            health = client.get("/healthz")
+            elapsed = monotonic() - started_at
+            created = creation.result(timeout=2)
+            release_timer.cancel()
+
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(created.status_code, 201)
+        self.assertLess(elapsed, 0.5)
 
     def test_workbench_is_a_packaged_resource_and_displays_runtime_capabilities(self):
         workbench = resources.files("metaclaw_troubleshooting").joinpath(
@@ -342,6 +515,7 @@ class TroubleshootingPersistenceApiTests(unittest.TestCase):
         html = workbench.read_text(encoding="utf-8")
         self.assertIn("/readyz", html)
         self.assertIn("/v1/troubleshooting/capabilities", html)
+        self.assertIn("error_id", html)
         response = TestClient(create_app(seed_demo=False)).get("/workbench")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, html)

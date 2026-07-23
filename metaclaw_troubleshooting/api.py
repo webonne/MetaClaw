@@ -153,10 +153,15 @@ def create_app(
     @app.exception_handler(RepositoryUnavailable)
     async def repository_unavailable_handler(
         _request: Request,
-        _error: RepositoryUnavailable,
+        error: RepositoryUnavailable,
     ) -> JSONResponse:
         error_id = f"storage-{uuid4().hex}"
-        logger.error("troubleshooting storage operation failed", extra={"error_id": error_id})
+        cause = error.__cause__ or error
+        logger.error(
+            "troubleshooting storage operation failed error_id=%s cause=%s",
+            error_id,
+            type(cause).__name__,
+        )
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
@@ -179,7 +184,7 @@ def create_app(
         }
 
     @app.get("/readyz", response_model=None)
-    async def readyz() -> JSONResponse:
+    def readyz() -> JSONResponse:
         readiness = diagnoses.readiness()
         if readiness.ready:
             return JSONResponse(
@@ -189,6 +194,12 @@ def create_app(
                 }
             )
         error_id = f"storage-{uuid4().hex}"
+        logger.error(
+            "troubleshooting storage readiness failed error_id=%s adapter=%s detail=%s",
+            error_id,
+            readiness.adapter,
+            readiness.detail,
+        )
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
@@ -201,7 +212,7 @@ def create_app(
         )
 
     @app.get("/v1/troubleshooting/capabilities")
-    async def capabilities() -> dict[str, object]:
+    def capabilities() -> dict[str, object]:
         readiness = diagnoses.readiness()
         return {
             "runtime_mode": module.mode,
@@ -210,6 +221,7 @@ def create_app(
                 "mode": "transactional_outbox",
                 "pending": readiness.pending_publications,
                 "publisher_connected": False,
+                "delivery_semantics": "leased_claim_ack_retry",
             },
             "write_execution_enabled": module.write_execution_enabled,
             "trusted_identity": False,
@@ -217,13 +229,13 @@ def create_app(
         }
 
     @app.get("/workbench", response_class=HTMLResponse, include_in_schema=False)
-    async def workbench() -> HTMLResponse:
+    def workbench() -> HTMLResponse:
         if not resolved_workbench.is_file():
             raise HTTPException(status_code=404, detail="workbench HTML not found")
         return HTMLResponse(resolved_workbench.read_text(encoding="utf-8"))
 
     @app.get("/v1/troubleshooting/diagnoses", response_model=list[Diagnosis])
-    async def list_diagnoses(include_rehearsals: bool = False) -> list[Diagnosis]:
+    def list_diagnoses(include_rehearsals: bool = False) -> list[Diagnosis]:
         return module.list(include_rehearsals=include_rehearsals)
 
     @app.post(
@@ -231,7 +243,7 @@ def create_app(
         response_model=Diagnosis,
         status_code=status.HTTP_201_CREATED,
     )
-    async def create_diagnosis(incident: IncidentContext) -> Diagnosis:
+    def create_diagnosis(incident: IncidentContext) -> Diagnosis:
         return module.diagnose(incident)
 
     @app.post(
@@ -239,7 +251,7 @@ def create_app(
         response_model=Diagnosis,
         status_code=status.HTTP_201_CREATED,
     )
-    async def create_rehearsal_903001(request: ActorRequest) -> Diagnosis:
+    def create_rehearsal_903001(request: ActorRequest) -> Diagnosis:
         rehearsal_id = f"rehearsal-903001-{uuid4().hex[:12]}"
         incident = fixture_incident_903001().model_copy(
             update={
@@ -257,21 +269,21 @@ def create_app(
         )
 
     @app.get("/v1/troubleshooting/diagnoses/{diagnosis_id}", response_model=Diagnosis)
-    async def read_diagnosis(diagnosis_id: str) -> Diagnosis:
+    def read_diagnosis(diagnosis_id: str) -> Diagnosis:
         return get_diagnosis(diagnosis_id)
 
     @app.post(
         "/v1/troubleshooting/diagnoses/{diagnosis_id}/confirm",
         response_model=Diagnosis,
     )
-    async def confirm_diagnosis(diagnosis_id: str, request: ActorRequest) -> Diagnosis:
+    def confirm_diagnosis(diagnosis_id: str, request: ActorRequest) -> Diagnosis:
         return module.apply(diagnosis_id, ConfirmDiagnosis(actor=request.actor))
 
     @app.post(
         "/v1/troubleshooting/diagnoses/{diagnosis_id}/transfer",
         response_model=Diagnosis,
     )
-    async def transfer_diagnosis(
+    def transfer_diagnosis(
         diagnosis_id: str,
         request: TransferRequest,
     ) -> Diagnosis:
@@ -281,7 +293,7 @@ def create_app(
         "/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{action_id}/approve",
         response_model=Diagnosis,
     )
-    async def approve_action(
+    def approve_action(
         diagnosis_id: str,
         action_id: str,
         request: ApprovalRequest,
@@ -295,7 +307,7 @@ def create_app(
         "/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{action_id}/record-outcome",
         response_model=Diagnosis,
     )
-    async def record_action_outcome(
+    def record_action_outcome(
         diagnosis_id: str,
         action_id: str,
         request: ActionOutcomeRequest,
@@ -309,14 +321,14 @@ def create_app(
         "/v1/troubleshooting/diagnoses/{diagnosis_id}/close",
         response_model=Diagnosis,
     )
-    async def close_diagnosis(
+    def close_diagnosis(
         diagnosis_id: str,
         request: CloseRequest,
     ) -> Diagnosis:
         return module.apply(diagnosis_id, CloseDiagnosis(request=request))
 
     @app.post("/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{action_id}/execute")
-    async def execute_action(diagnosis_id: str, action_id: str) -> None:
+    def execute_action(diagnosis_id: str, action_id: str) -> None:
         module.apply(diagnosis_id, ExecuteAction(action_id=action_id))
 
     return app

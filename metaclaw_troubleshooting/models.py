@@ -283,8 +283,10 @@ class KnowledgePublication(BaseModel):
     candidate_id: str
     payload: KnowledgeCandidate
     status: KnowledgePublicationStatus = KnowledgePublicationStatus.PENDING
-    attempts: int = 0
+    attempts: int = Field(default=0, ge=0)
     last_error: str | None = None
+    claimed_by: str | None = None
+    lease_expires_at: str | None = None
     created_at: str
     updated_at: str
 

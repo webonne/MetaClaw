@@ -449,7 +449,7 @@
     const response=await fetch(url,options);
     if(!response.ok){
       let detail='HTTP '+response.status;
-      try{const body=await response.json();detail=body.detail||detail;}catch(_error){}
+      try{const body=await response.json();detail=body.detail||detail;if(body.error_id)detail+=' · '+body.error_id;}catch(_error){}
       throw new Error(detail);
     }
     return response.json();

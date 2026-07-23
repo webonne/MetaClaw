@@ -1163,7 +1163,7 @@
         <div>
           <h4>D7 · MetaClaw 集成 = 产品入口一体、领域 Module 与运行时分开</h4>
           <p>同仓、同发行包、统一启动；排障先保持独立进程与 loopback，通过 ReasoningGateway / KnowledgePublisher Adapter 复用 MetaClaw，不继承或侵入核心内核。</p>
-          <div class="imp"><b>下游约束</b> Core 不导入排障领域模型；排障只依赖稳定 HTTP 契约；RBAC、持久化、静态资源打包与非阻塞真实 Adapter 完成前，不并入 Core FastAPI。实施合同见 <a href="./metaclaw-integration-design.md">MetaClaw 集成设计</a>。</div>
+          <div class="imp"><b>下游约束</b> Core 不导入排障领域模型；排障只依赖稳定 HTTP 契约。P2 已完成 SQLite 持久化、schema migration、事务 Outbox、静态资源打包与重启恢复；可信身份 / RBAC、真实 Adapter 和统一 Launcher 完成前，仍保持 loopback 独立进程，不并入 Core FastAPI。实施合同见 <a href="./metaclaw-integration-design.md">MetaClaw 集成设计</a>。</div>
         </div>
       </div>
     </div>
@@ -1251,7 +1251,7 @@
       <h2>蓝图能力落地热力矩阵</h2>
     </div>
     <p class="sub">横向不是“文档有没有写”，而是同一能力从决策、资产、代码、页面走到真实系统与生产验证的完整链条。绿色只代表该阶段有可核验证据；演练 fixture 不会被算成真实集成。</p>
-    <div class="hm-verdict"><span class="mark">当前判断</span><div><b>决策层已经收敛，本地主流程已经成形，真正的缺口集中在数据面与上线取信。</b><p>项目已从“要不要做、怎么设计”进入“接真实系统、修知识质量、拿历史样本证明可靠”的阶段。继续堆页面价值有限，下一枪应打在观测云真实取证。</p></div></div>
+    <div class="hm-verdict"><span class="mark">当前判断</span><div><b>决策层已经收敛，本地主流程已可安装、可关闭、可重启恢复，真正的缺口集中在数据面与上线取信。</b><p>项目已从“要不要做、怎么设计”进入“接真实系统、修知识质量、拿历史样本证明可靠”的阶段。继续堆页面价值有限，下一枪应打在观测云真实取证与 MetaClaw 真实 Adapter。</p></div></div>
     <div class="hm-summary" aria-label="落地状态摘要">
       <div class="hm-stat"><div class="value" id="hmDecision">—</div><div class="label">蓝图决策已完成</div><div class="hint" id="hmDistribution">全矩阵计算中</div></div>
       <div class="hm-stat"><div class="value" id="hmLocal">—</div><div class="label">本地后端 + 工作台完成格</div><div class="hint">其余多为部分落地</div></div>
@@ -1284,7 +1284,8 @@
       <div class="step todo"><span class="s">待讨论</span><div><b>DQL 模板运营</b><p>先人工为高频错误码写 evidence_dql，还是从历史处理记录学习生成——知识运营方式（R6 主要矛盾侧）。</p></div></div>
       <div class="step done"><span class="s">已定</span><div><b>上线取信策略</b><p>影子 + 历史回归集 + 放权阶梯 S0→S3（写操作永不自动）；按错误码逐格毕业；有害/高置信错误零容忍（详见 §11 · D5）。门槛数值待真实数据标定。</p></div></div>
       <div class="step done"><span class="s">进行中</span><div><b>L0 知识底座</b><p>已从《故障与措施》建结构化 SOP 库（146 个 D1 路由键，status=candidate）+ 清洗后家底盘点（62% 有恢复、30/146 约 21% 为只读自动化候选、18 个 P0/P1 首批审核对象；仍有质量阻断）。见 <code style="background:transparent;border:none;color:inherit">l0/</code>。</p></div></div>
-      <div class="step todo"><span class="s">下一步</span><div><b>903001 端到端竖线</b><p>人工审核候选条目 → 补 evidence_dql + anomaly_criteria → 接观测云真实取证 → 建 20–30 条历史回归集接影子模式。</p></div></div>
+      <div class="step done"><span class="s">已完成</span><div><b>D7 P2 可安装与可恢复</b><p>包内工作台 + SQLite schema v2 + 事务 Outbox；wheel 安装、完整闭环、进程重启恢复和失败重试均已验证。</p></div></div>
+      <div class="step todo"><span class="s">下一步</span><div><b>903001 真实数据竖线</b><p>人工审核候选条目 → 核实 evidence_dql + anomaly_criteria → 接观测云真实取证 → 建 20–30 条历史回归集接影子模式。</p></div></div>
     </div>
   </section>
 

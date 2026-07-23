@@ -18,8 +18,9 @@
 
 - [版式 A · 单故障详情页](./console-prototype.html) — IM 卡片 + 故障上下文 Web 台。
 - [版式 B · 值班驾驶舱](./console-prototype-b.html) — 三栏应用式（左队列/中处置/右证据）。
-- [故障工作台（列表→详情）](./console-workbench.html) — 通过 `/workbench` 访问时使用排障 API；
-  直接打开文件时保留离线样例。支持隔离演练、确认结论、结构化转派、生产写操作人工批准、
+- [故障工作台（列表→详情）](./console-workbench.html) — 正式页面位于 Python 包内的
+  `metaclaw_troubleshooting/static/console-workbench.html`，文档链接仅负责跳转；通过 `/workbench` 访问时使用排障 API。
+  支持隔离演练、确认结论、结构化转派、生产写操作人工批准、
   外部处置结果登记、恢复验证和关闭沉淀。MetaClaw 只记录批准与外部结果，不连接生产写执行器。
 
 ## 运行首条竖切 MVP
@@ -31,11 +32,16 @@
 uv run --no-project --with fastapi --with uvicorn python -m metaclaw_troubleshooting
 ```
 
+默认使用可恢复的 SQLite 数据库 `~/.metaclaw/troubleshooting.db`；可用 `--database /path/to/file.db`
+指定其他路径。服务在 RBAC/SSO 完成前只允许监听 loopback 地址。
+
 然后访问：
 
 - 工作台：`http://127.0.0.1:18080/workbench`
 - API 文档：`http://127.0.0.1:18080/docs`
 - 健康检查：`http://127.0.0.1:18080/healthz`
+- 就绪检查：`http://127.0.0.1:18080/readyz`
+- 运行能力：`http://127.0.0.1:18080/v1/troubleshooting/capabilities`
 
 点击工作台顶部的「一键创建 903001 主流程演练」，可走完以下隔离闭环：
 
@@ -57,10 +63,12 @@ uv run --no-project --with fastapi --with uvicorn python -m metaclaw_troubleshoo
 状态机拒绝跳过诊断确认、动作审批、外部结果或恢复验证；转派快照携带 case/run、trace、根因、置信度和
 证据 ID。知识候选预填证据、推荐动作、实际处置结果、根因与关闭摘要，只进入审核队列，不直接覆盖 SOP。
 
-D7 P1 核心收口已完成：HTTP 入口只负责协议转换，诊断创建、查询与状态命令统一进入
+D7 P1 + P2 已完成：HTTP 入口只负责协议转换，诊断创建、查询与状态命令统一进入
 `TroubleshootingModule`；`DiagnosisRepository` 负责副本隔离、复合幂等和并发命令原子更新，领域错误同时
-返回稳定机器码与可读说明。Reasoning / Knowledge 边界将在真实 MetaClaw Adapter 与 outbox 出现后再抽取，
-避免用空接口制造“已集成”的假象。当前 `actor` 尚未接可信身份，启动命令会拒绝非 loopback 地址。
+返回稳定机器码与可读说明。SQLite schema migration v2 已持久化完整 Diagnosis 聚合与知识发布 Outbox；
+候选和聚合同事务提交，消费端具备租约 claim、ack、失败重试与幂等约束。`KnowledgePublisher` 只会在 P3
+出现真实 MetaClaw Adapter 时抽取，避免用空接口制造“已集成”的假象。当前 `actor` 尚未接可信身份，
+启动命令会拒绝非 loopback 地址。
 
 默认 `903001` SOP 保持 `draft/verified=false`：工作台只展示影子取证，隐藏正式根因与恢复动作；只有测试中显式构造
 或隔离演练中构造 `approved/verified=true` 的合成 SOP，才会验证“人工批准但不执行”的合同。取证工具超时会降级为
@@ -69,8 +77,8 @@ D7 P1 核心收口已完成：HTTP 入口只负责协议转换，诊断创建、
 运行竖切测试：
 
 ```bash
-uv run --no-project --with fastapi --with httpx \
-  python -m unittest tests.test_troubleshooting_mvp -v
+uv run --no-project --python 3.12 --with fastapi --with httpx --with pytest \
+  python -m pytest -q tests/test_troubleshooting_mvp.py tests/test_troubleshooting_persistence.py
 ```
 
 ## L0 知识底座（已启动）
@@ -100,6 +108,11 @@ python3 docs/intelligent-troubleshooting/l0/clean_sop_kb.py \
 架构已收敛（v0.3，D1–D7 已锁定）。L0 知识底座已启动；`903001` 的本地 fixture 竖切已打通：
 确定性路由、4 项只读取证、数据驱动判据、统一 `Diagnosis` 合同、服务端复合幂等、工作台/API 联动，
 以及从诊断确认、结构化转派、人工批准、外部处置登记、恢复验证到关闭归档和知识候选的完整演练闭环。
+
+P2 已让这条闭环具备工程恢复能力：包内静态页与 SQL migrations 可随 wheel 安装，SQLite schema v2
+保存 Case/Run、Evidence、Approval、Transfer、Outcome、Closure、AuditEvent 与 KnowledgeCandidate；进程重启后
+状态可精确恢复，知识候选进入具备租约、确认与失败重试的事务 Outbox。`/readyz`、capabilities、503 错误 ID
+和日志关联已可用于本地运维定位；专项验证为 38 项测试通过（另含 7 个 subtests）。
 
 该竖切仍是开发态：观测云字段与阈值尚未联调核实，真实 Evidence/MCP 适配器与受控 LLM fallback 尚未接入，
 生产写执行器明确保持断开。

@@ -1,6 +1,6 @@
 # MetaClaw × 智能排障集成设计
 
-> 状态：Accepted · D7 · P1 核心收口已落地
+> 状态：Accepted · D7 · P2 可安装与可恢复已落地
 >
 > 日期：2026-07-23
 >
@@ -13,7 +13,7 @@
 
 - MetaClaw 核心运行时负责模型代理、Skills、Memory、Skill Evolver 与训练调度；
 - 排障运行时负责故障上下文、确定性路由、证据采集、诊断状态机、人工审批、关闭与知识候选；
-- 排障工作台仍从仓库 `docs/` 读取，安装 wheel 后不保证存在；
+- P2 前排障工作台仍从仓库 `docs/` 读取；现已迁入包内 static，并随 wheel 安装；
 - 两个 FastAPI 应用都有根路由和 `/healthz`，不能直接无前缀合并；
 - MetaClaw 默认可监听 `0.0.0.0`，而排障接口尚未接 RBAC/SSO，直接挂载会扩大暴露面；
 - 真实 DQL/MCP 是远程 I/O，不能阻塞 MetaClaw 聊天代理的事件循环与故障域。
@@ -128,7 +128,7 @@ P1 为保持现有 API 行为，命令中的 `actor` 仍来自请求体，只能
 
 | Seam / Interface | 当前 Adapter | 下一 Adapter | 失败语义 |
 |---|---|---|---|
-| `DiagnosisRepository` | `InMemoryDiagnosisRepository` | `SQLiteDiagnosisRepository`，再到 Postgres | 存储不可用时拒绝创建/迁移状态，不静默丢审计 |
+| `DiagnosisRepository` | `SQLiteDiagnosisRepository`（`InMemory` 仅用于测试） | Postgres / 共享事务存储 | 存储不可用时拒绝创建/迁移状态，不静默丢审计 |
 | `SopRepository` | `InMemorySopRepository` | `CanonicalSopRepository` / SOP MCP | 冲突、损坏、未审核均不进入正式诊断 |
 | `EvidenceCollector` | `FixtureEvidenceCollector` | `GuanceMcpEvidenceCollector` | 超时转 missing evidence，强制降级人工取证 |
 
@@ -277,14 +277,21 @@ RBAC、持久化和静态资源打包完成后，再由可信网关映射：
 官方启动命令拒绝 `0.0.0.0` 等非 loopback 绑定。
 身份认证属于 P5 入口准入，当前请求体 `actor` 未验证，故 P1 完成不代表可开放网络入口。
 
-### P2 · 可安装与可恢复
+### P2 · 可安装与可恢复（已完成 · 2026-07-23）
 
-- 工作台迁入包内 static 并配置 package-data。
-- 上 SQLite Adapter、schema migration、outbox 与审计持久化。
-- 先定义知识发布的事务/outbox 语义，不直接耦合 MetaClaw Memory 内部实现。
-- 增加 `/readyz`、capabilities 与运行模式展示。
+- 工作台迁入包内 `static/`，工作台和 SQL migration 均配置为 package-data；`docs/` 页面只保留跳转入口。
+- 新增 `SQLiteDiagnosisRepository` 与 schema migration v2。当前先把 Diagnosis 作为一个聚合 JSON 持久化，
+  原子保存 Case/Run、Evidence、Approval、Transfer、Outcome、Closure、AuditEvent 与 KnowledgeCandidate，避免在
+  查询模式尚未稳定时过早拆成多张领域表。
+- 知识候选与关闭聚合在同一 SQLite 事务提交；Outbox 以 `candidate_id` 唯一，提供租约 claim、显式 ack、
+  失败记录与可重试语义。P2 只定义可靠交付合同，不耦合 MetaClaw Memory，也不假装已经存在 Publisher。
+- 新增 `/readyz`、capabilities 与运行模式展示；503 响应携带可在服务日志中检索的错误 ID，工作台保留该 ID。
+- FastAPI 中会访问同步 SQLite 的路由交给线程池执行，轻量 `/healthz` 保持事件循环可响应；迁移失败会关闭
+  已部分创建的连接并 fail-closed。
 
-验收：从 wheel 安装后可启动；重启后 Case/Run/审批/关闭记录不丢失。
+验收结果：38 项排障测试通过（另含 7 个 subtests），Ruff 与 mypy 通过；从 wheel 安装后可启动并加载
+`static/` 与 v1/v2 migrations；完整主流程关闭后重启，Case/Run/审批/转派/关闭记录精确恢复；Outbox 已实测
+claim → failed → 重启 → retry → ack，尝试次数、错误信息与最终清空状态均持久化。
 
 ### P3 · MetaClaw 能力接入
 

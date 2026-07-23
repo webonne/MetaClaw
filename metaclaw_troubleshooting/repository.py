@@ -6,7 +6,7 @@ import json
 import sqlite3
 from collections.abc import Callable, Iterable
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from importlib import resources
 from pathlib import Path
 from threading import RLock
@@ -114,6 +114,77 @@ class InMemoryDiagnosisRepository:
             ]
             return [item.model_copy(deep=True) for item in pending[:limit]]
 
+    def claim_publications(
+        self,
+        *,
+        worker_id: str,
+        limit: int = 10,
+        lease_seconds: int = 60,
+    ) -> List[KnowledgePublication]:
+        worker_id = _validate_delivery_request(worker_id, limit, lease_seconds)
+        now = datetime.now(timezone.utc)
+        lease_expires_at = (now + timedelta(seconds=lease_seconds)).isoformat(timespec="seconds")
+        claimed: list[KnowledgePublication] = []
+        with self._lock:
+            for publication in self._publications.values():
+                if len(claimed) >= limit:
+                    break
+                if publication.status == KnowledgePublicationStatus.PUBLISHED:
+                    continue
+                if publication.claimed_by is not None and _lease_is_active(publication.lease_expires_at, now):
+                    continue
+                publication.status = KnowledgePublicationStatus.PENDING
+                publication.attempts += 1
+                publication.claimed_by = worker_id
+                publication.lease_expires_at = lease_expires_at
+                publication.updated_at = utc_now()
+                claimed.append(publication.model_copy(deep=True))
+        return claimed
+
+    def mark_publication_published(self, publication_id: str, *, worker_id: str) -> bool:
+        worker_id = _validate_worker_id(worker_id)
+        with self._lock:
+            publication = self._publications.get(publication_id)
+            if publication is None:
+                return False
+            if publication.status == KnowledgePublicationStatus.PUBLISHED:
+                return True
+            if publication.claimed_by != worker_id or not _lease_is_active(
+                publication.lease_expires_at,
+                datetime.now(timezone.utc),
+            ):
+                return False
+            publication.status = KnowledgePublicationStatus.PUBLISHED
+            publication.claimed_by = None
+            publication.lease_expires_at = None
+            publication.last_error = None
+            publication.updated_at = utc_now()
+            return True
+
+    def mark_publication_failed(
+        self,
+        publication_id: str,
+        *,
+        worker_id: str,
+        error: str,
+    ) -> bool:
+        worker_id = _validate_worker_id(worker_id)
+        with self._lock:
+            publication = self._publications.get(publication_id)
+            if publication is None or publication.status == KnowledgePublicationStatus.PUBLISHED:
+                return False
+            if publication.claimed_by != worker_id or not _lease_is_active(
+                publication.lease_expires_at,
+                datetime.now(timezone.utc),
+            ):
+                return False
+            publication.status = KnowledgePublicationStatus.FAILED
+            publication.claimed_by = None
+            publication.lease_expires_at = None
+            publication.last_error = error[:2000]
+            publication.updated_at = utc_now()
+            return True
+
     def readiness(self) -> RepositoryReadiness:
         with self._lock:
             return RepositoryReadiness(
@@ -121,7 +192,10 @@ class InMemoryDiagnosisRepository:
                 adapter="memory",
                 persistent=False,
                 schema_version=0,
-                pending_publications=len(self.pending_publications()),
+                pending_publications=sum(
+                    publication.status != KnowledgePublicationStatus.PUBLISHED
+                    for publication in self._publications.values()
+                ),
             )
 
     def _save_locked(self, diagnosis: Diagnosis) -> Diagnosis:
@@ -232,11 +306,15 @@ class SQLiteDiagnosisRepository:
             self._connection.execute("PRAGMA synchronous = NORMAL")
             self._connection.execute("PRAGMA busy_timeout = 5000")
             self._run_migrations()
+        except RepositoryUnavailable:
+            self._close_connection_quietly()
+            raise
         except (OSError, sqlite3.Error) as error:
-            connection = getattr(self, "_connection", None)
-            if connection is not None:
-                connection.close()
+            self._close_connection_quietly()
             raise RepositoryUnavailable("troubleshooting storage unavailable") from error
+        except BaseException:
+            self._close_connection_quietly()
+            raise
 
     def add(self, diagnosis: Diagnosis) -> Diagnosis:
         with self._lock, self._transaction():
@@ -367,7 +445,8 @@ class SQLiteDiagnosisRepository:
                 rows = self._connection.execute(
                     """
                     SELECT publication_id, contract_version, diagnosis_id, candidate_id,
-                           payload_json, status, attempts, last_error, created_at, updated_at
+                           payload_json, status, attempts, last_error, claimed_by,
+                           lease_expires_at, created_at, updated_at
                     FROM knowledge_outbox
                     WHERE status IN ('pending', 'failed')
                     ORDER BY created_at, publication_id
@@ -378,6 +457,122 @@ class SQLiteDiagnosisRepository:
                 return [self._decode_publication(row) for row in rows]
             except sqlite3.Error as error:
                 raise RepositoryUnavailable("troubleshooting storage unavailable") from error
+
+    def claim_publications(
+        self,
+        *,
+        worker_id: str,
+        limit: int = 10,
+        lease_seconds: int = 60,
+    ) -> List[KnowledgePublication]:
+        worker_id = _validate_delivery_request(worker_id, limit, lease_seconds)
+        now = utc_now()
+        lease_expires_at = (
+            datetime.now(timezone.utc) + timedelta(seconds=lease_seconds)
+        ).isoformat(timespec="seconds")
+        with self._lock, self._transaction():
+            rows = self._connection.execute(
+                """
+                SELECT publication_id
+                FROM knowledge_outbox
+                WHERE status IN ('pending', 'failed')
+                  AND (claimed_by IS NULL OR lease_expires_at IS NULL OR lease_expires_at <= ?)
+                ORDER BY created_at, publication_id
+                LIMIT ?
+                """,
+                (now, limit),
+            ).fetchall()
+            publication_ids = [row["publication_id"] for row in rows]
+            if not publication_ids:
+                return []
+            placeholders = ",".join("?" for _item in publication_ids)
+            self._connection.execute(
+                f"""
+                UPDATE knowledge_outbox
+                SET status = 'pending', attempts = attempts + 1, claimed_by = ?,
+                    lease_expires_at = ?, updated_at = ?
+                WHERE publication_id IN ({placeholders})
+                """,
+                (worker_id, lease_expires_at, now, *publication_ids),
+            )
+            claimed_rows = self._connection.execute(
+                f"""
+                SELECT publication_id, contract_version, diagnosis_id, candidate_id,
+                       payload_json, status, attempts, last_error, claimed_by,
+                       lease_expires_at, created_at, updated_at
+                FROM knowledge_outbox
+                WHERE publication_id IN ({placeholders})
+                ORDER BY created_at, publication_id
+                """,
+                publication_ids,
+            ).fetchall()
+            return [self._decode_publication(row) for row in claimed_rows]
+
+    def mark_publication_published(self, publication_id: str, *, worker_id: str) -> bool:
+        worker_id = _validate_worker_id(worker_id)
+        now = utc_now()
+        with self._lock, self._transaction():
+            row = self._connection.execute(
+                """
+                SELECT status, claimed_by, lease_expires_at
+                FROM knowledge_outbox
+                WHERE publication_id = ?
+                """,
+                (publication_id,),
+            ).fetchone()
+            if row is None:
+                return False
+            if row["status"] == KnowledgePublicationStatus.PUBLISHED.value:
+                return True
+            if row["claimed_by"] != worker_id or row["lease_expires_at"] is None or row["lease_expires_at"] <= now:
+                return False
+            self._connection.execute(
+                """
+                UPDATE knowledge_outbox
+                SET status = 'published', claimed_by = NULL, lease_expires_at = NULL,
+                    last_error = NULL, updated_at = ?
+                WHERE publication_id = ?
+                """,
+                (now, publication_id),
+            )
+            return True
+
+    def mark_publication_failed(
+        self,
+        publication_id: str,
+        *,
+        worker_id: str,
+        error: str,
+    ) -> bool:
+        worker_id = _validate_worker_id(worker_id)
+        now = utc_now()
+        with self._lock, self._transaction():
+            row = self._connection.execute(
+                """
+                SELECT status, claimed_by, lease_expires_at
+                FROM knowledge_outbox
+                WHERE publication_id = ?
+                """,
+                (publication_id,),
+            ).fetchone()
+            if (
+                row is None
+                or row["status"] == KnowledgePublicationStatus.PUBLISHED.value
+                or row["claimed_by"] != worker_id
+                or row["lease_expires_at"] is None
+                or row["lease_expires_at"] <= now
+            ):
+                return False
+            self._connection.execute(
+                """
+                UPDATE knowledge_outbox
+                SET status = 'failed', claimed_by = NULL, lease_expires_at = NULL,
+                    last_error = ?, updated_at = ?
+                WHERE publication_id = ?
+                """,
+                (error[:2000], now, publication_id),
+            )
+            return True
 
     def readiness(self) -> RepositoryReadiness:
         with self._lock:
@@ -411,6 +606,15 @@ class SQLiteDiagnosisRepository:
                 return
             self._connection.close()
             self._closed = True
+
+    def _close_connection_quietly(self) -> None:
+        connection = getattr(self, "_connection", None)
+        if connection is None:
+            return
+        try:
+            connection.close()
+        except sqlite3.Error:
+            pass
 
     def _run_migrations(self) -> None:
         self._connection.execute(
@@ -475,7 +679,7 @@ class SQLiteDiagnosisRepository:
             publication = _new_publication(diagnosis, candidate)
             self._connection.execute(
                 """
-                INSERT OR IGNORE INTO knowledge_outbox (
+                INSERT INTO knowledge_outbox (
                     publication_id,
                     candidate_id,
                     diagnosis_id,
@@ -522,6 +726,8 @@ class SQLiteDiagnosisRepository:
                 status=row["status"],
                 attempts=row["attempts"],
                 last_error=row["last_error"],
+                claimed_by=row["claimed_by"],
+                lease_expires_at=row["lease_expires_at"],
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
             )
@@ -553,3 +759,31 @@ def _idempotency_key(diagnosis: Diagnosis) -> tuple[str, str, str, str] | None:
 
 def _idempotency_identity(diagnosis: Diagnosis) -> tuple[bool, str, str, str, str | None]:
     return InMemoryDiagnosisRepository._idempotency_identity(diagnosis)
+
+
+def _validate_worker_id(worker_id: str) -> str:
+    normalized = worker_id.strip()
+    if not normalized:
+        raise ValueError("worker_id must not be empty")
+    return normalized
+
+
+def _validate_delivery_request(worker_id: str, limit: int, lease_seconds: int) -> str:
+    normalized = _validate_worker_id(worker_id)
+    if limit <= 0:
+        raise ValueError("limit must be positive")
+    if lease_seconds <= 0:
+        raise ValueError("lease_seconds must be positive")
+    return normalized
+
+
+def _lease_is_active(lease_expires_at: str | None, now: datetime) -> bool:
+    if lease_expires_at is None:
+        return False
+    try:
+        parsed = datetime.fromisoformat(lease_expires_at.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc) > now

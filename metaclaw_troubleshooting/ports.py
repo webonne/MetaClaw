@@ -49,6 +49,24 @@ class DiagnosisRepository(Protocol):
 
     def pending_publications(self, *, limit: int = 100) -> List[KnowledgePublication]: ...
 
+    def claim_publications(
+        self,
+        *,
+        worker_id: str,
+        limit: int = 10,
+        lease_seconds: int = 60,
+    ) -> List[KnowledgePublication]: ...
+
+    def mark_publication_published(self, publication_id: str, *, worker_id: str) -> bool: ...
+
+    def mark_publication_failed(
+        self,
+        publication_id: str,
+        *,
+        worker_id: str,
+        error: str,
+    ) -> bool: ...
+
     def readiness(self) -> RepositoryReadiness: ...
 
 
