@@ -17,8 +17,8 @@
 - [版式 A · 单故障详情页](./console-prototype.html) — IM 卡片 + 故障上下文 Web 台。
 - [版式 B · 值班驾驶舱](./console-prototype-b.html) — 三栏应用式（左队列/中处置/右证据）。
 - [故障工作台（列表→详情）](./console-workbench.html) — 通过 `/workbench` 访问时使用排障 API；
-  直接打开文件时保留离线样例。支持手动录入、确认结论和生产写操作人工批准。MVP 只记录批准，
-  不连接生产写执行器。
+  直接打开文件时保留离线样例。支持隔离演练、确认结论、结构化转派、生产写操作人工批准、
+  外部处置结果登记、恢复验证和关闭沉淀。MetaClaw 只记录批准与外部结果，不连接生产写执行器。
 
 ## 运行首条竖切 MVP
 
@@ -35,10 +35,29 @@ uv run --no-project --with fastapi --with uvicorn python -m metaclaw_troubleshoo
 - API 文档：`http://127.0.0.1:18080/docs`
 - 健康检查：`http://127.0.0.1:18080/healthz`
 
-核心接口为 `GET/POST /v1/troubleshooting/diagnoses`、诊断确认接口，以及 action 人工批准接口。
-`POST .../execute` 在当前 MVP 中固定返回 `409`，用于证明生产写操作无法从页面或 API 被误执行。
+点击工作台顶部的「一键创建 903001 主流程演练」，可走完以下隔离闭环：
+
+```text
+故障接入 → 自动取证 → 诊断确认 → 结构化转派 → 人工批准
+→ 外部处置结果登记 → 恢复验证 → 关闭归档 → 知识候选审核
+```
+
+演练使用独立的 `CSDP-REHEARSAL` 路由和唯一 case/run，不会把 canonical `CSDP:903001` 草案 SOP
+改成已审核状态。核心接口包括：
+
+- `POST /v1/troubleshooting/rehearsals/903001`：创建合成演练；
+- `POST .../confirm`、`POST .../transfer`：人工确认与携带上下文的结构化转派；
+- `POST .../actions/{action_id}/approve`：仅记录人工批准；
+- `POST .../actions/{action_id}/record-outcome`：登记 MetaClaw 外部的人工处置结果和恢复验证；
+- `POST .../close`：关闭归档，可生成 `candidate` 状态的知识候选；
+- `POST .../execute`：固定返回 `409`，证明页面和 API 都不能误执行生产写操作。
+
+状态机拒绝跳过诊断确认、动作审批、外部结果或恢复验证；转派快照携带 case/run、trace、根因、置信度和
+证据 ID。知识候选预填证据、推荐动作、实际处置结果、根因与关闭摘要，只进入审核队列，不直接覆盖 SOP。
+
 默认 `903001` SOP 保持 `draft/verified=false`：工作台只展示影子取证，隐藏正式根因与恢复动作；只有测试中显式构造
-`approved/verified=true` 的 SOP 才会验证“人工批准但不执行”的合同。取证工具超时会降级为人工取证，不返回 500。
+或隔离演练中构造 `approved/verified=true` 的合成 SOP，才会验证“人工批准但不执行”的合同。取证工具超时会降级为
+人工取证，不返回 500。
 
 运行竖切测试：
 
@@ -73,7 +92,7 @@ python3 docs/intelligent-troubleshooting/l0/clean_sop_kb.py \
 
 架构已收敛（v0.3，D1–D6 已锁定）。L0 知识底座已启动；`903001` 的本地 fixture 竖切已打通：
 确定性路由、4 项只读取证、数据驱动判据、统一 `Diagnosis` 合同、服务端复合幂等、工作台/API 联动，
-以及经审核 SOP 的生产写操作人工批准合同。
+以及从诊断确认、结构化转派、人工批准、外部处置登记、恢复验证到关闭归档和知识候选的完整演练闭环。
 
 该竖切仍是开发态：观测云字段与阈值尚未联调核实，真实 Evidence/MCP 适配器与受控 LLM fallback 尚未接入，
 生产写执行器明确保持断开。

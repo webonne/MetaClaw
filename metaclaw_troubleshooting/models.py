@@ -17,6 +17,8 @@ class DiagnosisStatus(str, Enum):
     READY_FOR_HUMAN = "ready_for_human"
     NEEDS_INVESTIGATION = "needs_investigation"
     CONFIRMED = "confirmed"
+    TRANSFERRED = "transferred"
+    CLOSED = "closed"
 
 
 class Confidence(str, Enum):
@@ -43,6 +45,23 @@ class ExecutionStatus(str, Enum):
     PENDING = "pending"
     BLOCKED = "blocked"
     NOT_APPLICABLE = "not_applicable"
+
+
+class ActionOutcomeStatus(str, Enum):
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class ClosureOutcome(str, Enum):
+    RECOVERED = "recovered"
+    FALSE_POSITIVE = "false_positive"
+    TRANSFERRED_OUT = "transferred_out"
+    UNRESOLVED = "unresolved"
+
+
+class KnowledgeCandidateStatus(str, Enum):
+    CANDIDATE = "candidate"
 
 
 class EvidenceStatus(str, Enum):
@@ -192,9 +211,68 @@ class TimelineEvent(BaseModel):
     status: str = "done"
 
 
+class TransferContextSnapshot(BaseModel):
+    case_id: str
+    run_id: str
+    trace_id: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    root_cause: str
+    confidence: Confidence
+
+
+class TransferRecord(BaseModel):
+    transfer_id: str
+    target_team: str
+    note: str
+    actor: str
+    transferred_at: str
+    context: TransferContextSnapshot
+
+
+class ActionOutcomeRecord(BaseModel):
+    outcome_id: str
+    action_id: str
+    outcome: ActionOutcomeStatus
+    notes: str
+    recovery_verified: bool = False
+    actor: str
+    recorded_at: str
+
+
+class ClosureRecord(BaseModel):
+    outcome: ClosureOutcome
+    summary: str
+    recovery_verified: bool = False
+    sop_feedback: str | None = None
+    knowledge_candidate_id: str | None = None
+    actor: str
+    closed_at: str
+
+
+class KnowledgeCandidate(BaseModel):
+    candidate_id: str
+    status: KnowledgeCandidateStatus = KnowledgeCandidateStatus.CANDIDATE
+    source_diagnosis_id: str
+    source_case_id: str
+    source_run_id: str
+    system: str
+    error_code: str | None = None
+    sop_key: str | None = None
+    root_cause: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    recommended_actions: list[RecommendedAction] = Field(default_factory=list)
+    action_outcomes: list[ActionOutcomeRecord] = Field(default_factory=list)
+    resolution_summary: str
+    feedback: str | None = None
+    created_by: str
+    created_at: str
+
+
 class Diagnosis(BaseModel):
     diagnosis_id: str
-    contract_version: str = "1.2"
+    contract_version: str = "1.3"
+    case_id: str
+    run_id: str
     incident: IncidentContext
     route_mode: RouteMode
     status: DiagnosisStatus
@@ -209,7 +287,12 @@ class Diagnosis(BaseModel):
     recommended_actions: list[RecommendedAction] = Field(default_factory=list)
     pending_writes: list[RecommendedAction] = Field(default_factory=list)
     route_to_team: str | None = None
+    transfers: list[TransferRecord] = Field(default_factory=list)
+    action_outcomes: list[ActionOutcomeRecord] = Field(default_factory=list)
+    closure: ClosureRecord | None = None
+    knowledge_candidates: list[KnowledgeCandidate] = Field(default_factory=list)
     timeline: list[TimelineEvent] = Field(default_factory=list)
+    rehearsal: bool = False
     fixture_mode: bool = True
     write_execution_enabled: bool = False
     warnings: list[str] = Field(default_factory=list)
@@ -221,3 +304,22 @@ class ActorRequest(BaseModel):
 
 class ApprovalRequest(ActorRequest):
     reason: str = Field(min_length=1)
+
+
+class TransferRequest(ActorRequest):
+    target_team: str = Field(min_length=1)
+    note: str = Field(min_length=1)
+
+
+class ActionOutcomeRequest(ActorRequest):
+    outcome: ActionOutcomeStatus
+    notes: str = Field(min_length=1)
+    recovery_verified: bool = False
+
+
+class CloseRequest(ActorRequest):
+    outcome: ClosureOutcome
+    summary: str = Field(min_length=1)
+    recovery_verified: bool = False
+    sop_feedback: str | None = None
+    create_knowledge_candidate: bool = False

@@ -117,6 +117,7 @@
   .pill.diag{color:var(--accent);background:var(--accent-soft);border-color:transparent}
   .pill.todo{color:var(--crit);background:var(--crit-soft);border-color:transparent}
   .pill.confirmed{color:var(--ok);background:var(--ok-soft);border-color:transparent}
+  .pill.transferred{color:var(--contact);background:var(--contact-soft);border-color:transparent}
   .pill.closed{color:var(--muted);background:var(--surface-3);border-color:transparent}
   .card .sla{font-family:var(--mono);font-size:12px;font-weight:700}
   .card .sla.hot{color:var(--crit)} .card .sla.mid{color:var(--warn)} .card .sla.cool{color:var(--muted)}
@@ -137,6 +138,7 @@
   .status.diag{color:var(--accent);background:var(--accent-soft);border-color:transparent}
   .status.todo{color:var(--crit);background:var(--crit-soft);border-color:transparent}
   .status.confirmed{color:var(--ok);background:var(--ok-soft);border-color:transparent}
+  .status.transferred{color:var(--contact);background:var(--contact-soft);border-color:transparent}
   .status.closed{color:var(--muted);background:var(--surface-3);border-color:transparent}
   .ihead .row2{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:11px;font-size:12.5px;color:var(--muted)}
   .ihead .row2 b{color:var(--ink-2);font-weight:600}
@@ -196,6 +198,20 @@
   .tl li .tt{font-family:var(--mono);font-size:11px;color:var(--faint);margin-right:8px}
   .tl li .who{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-left:6px}
 
+  .rehearsal-note{display:flex;gap:10px;align-items:flex-start;background:var(--warn-soft);color:var(--ink-2);
+    border-bottom:1px solid var(--line);padding:10px 20px;font-size:12.5px}
+  .rehearsal-note b{color:var(--warn);white-space:nowrap}
+  .flow-wrap{background:var(--surface);border-bottom:1px solid var(--line);padding:13px 20px}
+  .flow-meta{display:flex;flex-wrap:wrap;gap:7px 18px;margin-bottom:10px;font-size:11px;color:var(--muted)}
+  .flow-meta span{font-family:var(--mono)}
+  .flowbar{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .flowstep{position:relative;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;
+    padding:7px 5px;text-align:center;font-size:11px;color:var(--faint);font-weight:650}
+  .flowstep.done{border-color:transparent;background:var(--ok-soft);color:var(--ok)}
+  .flowstep.current{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .flowstep.skipped{border-style:dashed;background:var(--surface);color:var(--muted)}
+  @media(max-width:640px){.flowbar{grid-template-columns:repeat(3,1fr)}}
+
   .abar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;padding:12px 20px;background:var(--surface);border-top:1px solid var(--line)}
 
   .overlay{position:fixed;inset:0;background:rgba(6,10,14,.5);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
@@ -207,7 +223,9 @@
   .modal p{margin:0 0 6px;font-size:13px;color:var(--ink-2)}
   .modal .detail{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin:12px 0;color:var(--ink-2);line-height:1.6}
   .modal label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;font-weight:600}
-  .modal textarea{width:100%;font-family:var(--sans);font-size:13px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;resize:vertical}
+  .modal textarea,.modal input[type="text"],.modal select{width:100%;font-family:var(--sans);font-size:13px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;resize:vertical}
+  .modal .check{display:flex;align-items:flex-start;gap:8px;color:var(--ink-2);font-weight:500;margin-top:12px}
+  .modal .check input{margin-top:3px}
   .modal .foot{display:flex;gap:9px;justify-content:flex-end;margin-top:18px}
   #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:60;align-items:center;pointer-events:none}
   .toast{background:var(--ink);color:var(--surface);font-size:13px;padding:10px 16px;border-radius:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:9px;animation:tin .2s ease-out}
@@ -233,7 +251,8 @@
     </div>
 
     <div class="toolbar">
-      <button class="btn pri sm" onclick="openIntake()">＋ 手动录入</button>
+      <button class="btn pri sm" id="rehearsalBtn" onclick="startRehearsal()">▶ 一键创建 903001 主流程演练</button>
+      <button class="btn sm" onclick="openIntake()">＋ 手动录入</button>
       <select class="sysSel" id="sysSel" onchange="setSys(this.value)"></select>
       <div class="tabs" id="tabs">
         <button class="tab on" data-f="all">全部 <span class="c" id="cAll"></span></button>
@@ -265,7 +284,7 @@
 (function(){
   "use strict";
   const $=s=>document.querySelector(s), sevColor={P0:'var(--p0)',P1:'var(--p1)',P2:'var(--p2)'};
-  const stLabel={diag:'诊断中',todo:'待处理',confirmed:'已确认',closed:'已关闭'};
+  const stLabel={diag:'诊断中',todo:'待处理',confirmed:'已确认',transferred:'已转派',closed:'已关闭'};
 
   let DB=[
     {id:'903001',sev:'P0',service:'csdp-wechat',ecode:'903001',title:'数据库访问异常',
@@ -358,25 +377,30 @@
   DB.forEach(d=>{ d.auto = AUTO[d.id] || 'shadow'; });
   const AUTO_LABEL={shadow:'影子',suggest:'建议',auto:'自动·只读'};
 
-  let filter='all', sysFilter='all', cur=null, apiAvailable=false;
+  let filter='all', sysFilter='all', cur=null, apiAvailable=false, selectedActionId='';
 
   function h(value){
     return String(value??'').replace(/[&<>"']/g,ch=>({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     })[ch]);
   }
+  function encoded(value){return encodeURIComponent(String(value||'')).replace(/'/g,'%27');}
   function displayTime(value){
     const match=String(value||'').match(/T(\d{2}:\d{2}:\d{2})/);
     return match?match[1]:h(value||'刚刚');
   }
   function adaptDiagnosis(d){
     const incident=d.incident||{};
-    const statusMap={ready_for_human:'diag',needs_investigation:'todo',confirmed:'confirmed'};
+    const statusMap={ready_for_human:'diag',needs_investigation:'todo',confirmed:'confirmed',transferred:'transferred',closed:'closed'};
     const confidenceMap={high:['高',3],medium:['中',2],low:['低',1]};
     const confidence=confidenceMap[d.confidence]||confidenceMap.low;
+    const latestOutcomeByAction={};
+    (d.action_outcomes||[]).forEach(outcome=>{latestOutcomeByAction[outcome.action_id]=outcome;});
     const actions=(d.recommended_actions||[]).map(a=>{
       const isWrite=a.action_type==='manual_write';
-      const isDone=a.execution_status==='completed';
+      const outcome=latestOutcomeByAction[a.action_id]||null;
+      const transferCompleted=a.action_type==='human_contact'&&Boolean((d.transfers||[]).length);
+      const isDone=a.execution_status==='completed'||transferCompleted||Boolean(outcome&&outcome.outcome==='succeeded'&&outcome.recovery_verified);
       const tier=isWrite?'write':a.action_type==='auto_readonly'?'auto':'contact';
       return {
         tier: tier,
@@ -386,6 +410,8 @@
         done: isDone?1:0,
         write: isWrite?1:0,
         approved: a.approval_status==='approved',
+        externalOutcome: outcome?outcome.outcome:'',
+        recoveryVerified: Boolean(outcome&&outcome.recovery_verified),
         actionId: String(a.action_id||''),
         act: '待人工处理',
         actMsg: 'MVP 尚未接入通知渠道，请由值班人员线下处置'
@@ -403,15 +429,19 @@
     }));
     return {
       id:String(d.diagnosis_id),diagnosisId:String(d.diagnosis_id),apiBacked:true,
+      caseId:h(d.case_id||'—'),runId:h(d.run_id||'—'),rehearsal:Boolean(d.rehearsal),
       sys:h(incident.system||'未知系统'),sev:h(incident.severity||'P2'),service:h(incident.service||'待识别'),
       ecode:h(incident.error_code||'—'),light:incident.error_code?0:1,title:h(incident.title||d.summary||'待诊断故障'),
       impact:h(incident.impact||'待确认'),type:d.route_mode==='deterministic'?'确定性 SOP 路由':'受控 LLM 回退',
       trace:h(incident.trace_id||'—'),sla:h(incident.sla_remaining||'—'),slaCls:'cool',
       st:statusMap[d.status]||'todo',age:'刚刚',owner:'当班',cause:h(d.root_cause||d.summary||'证据不足'),
       conf:confidence[0],confN:confidence[1],sop:h(d.sop_key||'— 未命中，待受控分诊'),
-      steps:actions,ev:evidence,tl:timeline,auto:'shadow',fixtureMode:Boolean(d.fixture_mode),
+      steps:actions,ev:evidence,tl:timeline,auto:d.rehearsal?'suggest':'shadow',fixtureMode:Boolean(d.fixture_mode),
       warnings:(d.warnings||[]).map(h),routeMode:d.route_mode,abstained:Boolean(d.abstained),
-      completeness:h(incident.completeness||'structured'),routeToTeam:h(d.route_to_team||'')
+      completeness:h(incident.completeness||'structured'),routeToTeam:h(d.route_to_team||''),
+      transfers:d.transfers||[],actionOutcomes:d.action_outcomes||[],
+      closure:d.closure?{outcome:h(d.closure.outcome),summary:h(d.closure.summary),recoveryVerified:Boolean(d.closure.recovery_verified),candidateId:h(d.closure.knowledge_candidate_id||'')}:null,
+      knowledgeCandidates:(d.knowledge_candidates||[]).map(candidate=>({candidateId:h(candidate.candidate_id),status:h(candidate.status)}))
     };
   }
   async function apiJson(url,options){
@@ -438,14 +468,14 @@
       return;
     }
     try{
-      const diagnoses=await apiJson('/v1/troubleshooting/diagnoses');
+      const diagnoses=await apiJson('/v1/troubleshooting/diagnoses?include_rehearsals=true');
       DB=diagnoses.map(adaptDiagnosis);
       apiAvailable=true;sysFilter='all';
       $('#scMttr').textContent='—';$('#scAuto').textContent='—';
       $('#scMttrLabel').textContent='今日均 MTTR（未接入）';
       $('#scAutoLabel').textContent='自动化率（未统计）';
       mode.textContent='接口模式 · '+(diagnoses.some(d=>d.fixture_mode)?'fixture':'live');
-      note.textContent='API 接口模式 · 列表与详情共用 Diagnosis 合同 · MVP 仅记录人工批准，不执行生产写操作。';
+      note.textContent='API 接口模式 · 主流程可演练 · 生产写操作仅记录人工批准与外部结果，MetaClaw 不执行。';
       initSysSel();renderList();
     }catch(error){
       mode.textContent='离线样例';
@@ -453,6 +483,19 @@
       toast('排障 API 暂不可用，已切换离线样例');
     }
   }
+
+  window.startRehearsal=async function(){
+    if(!apiAvailable){toast('请通过 /workbench 访问并等待 API 连接完成');return;}
+    const button=$('#rehearsalBtn');if(button)button.disabled=true;
+    try{
+      const diagnosis=await apiJson('/v1/troubleshooting/rehearsals/903001',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actor:'demo-on-call'})
+      });
+      const item=replaceDiagnosis(diagnosis);initSysSel();renderList();openDetail(item.id);
+      toast('903001 合成演练已创建：从确认结论开始派通主流程','ic');
+    }catch(error){toast('创建演练失败：'+error.message);}
+    finally{if(button)button.disabled=false;}
+  };
 
   window.toast=function(msg,ic){const t=document.createElement('div');t.className='toast';
     if(ic){const icon=document.createElement('span');icon.className='ic';icon.textContent='✓';t.appendChild(icon);}
@@ -462,13 +505,13 @@
   function sysBase(){ return DB.filter(d=> sysFilter==='all' || d.sys===sysFilter); }
   function counts(){
     const base=sysBase(),c={all:base.length,P0:0,todo:0,diag:0};
-    base.forEach(d=>{if(d.sev==='P0'&&d.st!=='closed')c.P0++;if(d.st==='todo')c.todo++;if(d.st==='diag')c.diag++;});
+    base.filter(d=>!d.rehearsal).forEach(d=>{if(d.sev==='P0'&&d.st!=='closed')c.P0++;if(d.st==='todo')c.todo++;if(['diag','confirmed','transferred'].includes(d.st))c.diag++;});
     return c;
   }
   function matchFilter(d){
     if(filter==='P0')return d.sev==='P0';
     if(filter==='todo')return d.st==='todo';
-    if(filter==='diag')return d.st==='diag';
+    if(filter==='diag')return ['diag','confirmed','transferred'].includes(d.st);
     return true;
   }
   function initSysSel(){
@@ -480,8 +523,8 @@
   window.renderList=function(){
     const c=counts();
     $('#cAll').textContent=c.all;$('#cP0').textContent=c.P0;$('#cTodo').textContent=c.todo;$('#cDiag').textContent=c.diag;
-    $('#scP0').textContent=DB.filter(d=>d.sev==='P0'&&d.st!=='closed').length;
-    $('#scActive').textContent=DB.filter(d=>d.st==='todo'||d.st==='diag').length;
+    $('#scP0').textContent=DB.filter(d=>!d.rehearsal&&d.sev==='P0'&&d.st!=='closed').length;
+    $('#scActive').textContent=DB.filter(d=>!d.rehearsal&&['todo','diag','confirmed','transferred'].includes(d.st)).length;
     const q=($('#q').value||'').trim().toLowerCase();
     const rows=sysBase().filter(d=>matchFilter(d)&&(!q||d.ecode.toLowerCase().includes(q)||d.service.toLowerCase().includes(q)||d.title.toLowerCase().includes(q)||d.sys.toLowerCase().includes(q)));
     const el=$('#list');
@@ -506,15 +549,68 @@
   }));
 
   function confBars(n){let s='';for(let i=0;i<4;i++)s+='<i class="'+(i<n?'':'off')+'"></i>';return s;}
+  function recoveryComplete(it){
+    if(it.st==='closed')return Boolean(it.closure&&it.closure.recoveryVerified);
+    const writes=it.steps.filter(step=>step.write);
+    return writes.length>0&&writes.every(step=>step.approved&&step.externalOutcome==='succeeded'&&step.recoveryVerified);
+  }
+  function flowHtml(it){
+    const confirmed=['confirmed','transferred','closed'].includes(it.st);
+    const transferred=Boolean(it.transfers&&it.transfers.length);
+    const recovered=recoveryComplete(it);
+    const closed=it.st==='closed';
+    const stages=[
+      {label:'故障接入',done:true},{label:'自动取证',done:Boolean(it.ev.length)},
+      {label:'诊断确认',done:confirmed},{label:'协同转派',done:transferred,skipped:closed&&!transferred},
+      {label:'恢复验证',done:recovered,skipped:closed&&!recovered},{label:'关闭归档',done:closed}
+    ];
+    const currentIndex=closed?-1:stages.findIndex(stage=>!stage.done);
+    return stages.map((stage,index)=>{
+      const cls=stage.done?'done':stage.skipped?'skipped':index===currentIndex?'current':'';
+      const prefix=stage.done?'✓ ':stage.skipped?'— ':'';
+      return `<div class="flowstep ${cls}">${prefix}${stage.label}</div>`;
+    }).join('');
+  }
+  function actionButtonsHtml(it){
+    const confirmed=['confirmed','transferred'].includes(it.st),closed=it.st==='closed';
+    const writes=it.steps.filter(step=>step.write);
+    const buttons=[];
+    const confirmLabel=closed||confirmed?'已确认':it.abstained?'证据不足 · 待人工深查':'确认结论';
+    buttons.push(`<button class="btn pri sm" id="cfBtn" onclick="confirmConcl()" ${closed||confirmed||it.abstained?'disabled':''}>${confirmLabel}</button>`);
+    buttons.push(`<button class="btn sm" onclick="openTransfer()" ${closed||!confirmed?'disabled':''}>${(it.transfers||[]).length?'重新转派':'结构化转派'}</button>`);
+    writes.forEach(write=>{
+      const actionArg="decodeURIComponent('"+encoded(write.actionId)+"')";
+      const actionLabel=writes.length>1?' · '+write.tx:'';
+      if(!write.approved){
+        buttons.push(`<button class="btn danger sm" onclick="openWrite(${actionArg})" ${!confirmed?'disabled':''}>审批写操作${actionLabel}</button>`);
+      }else if(!write.externalOutcome){
+        buttons.push(`<button class="btn danger sm" onclick="openOutcome(${actionArg})" ${closed||!confirmed?'disabled':''}>登记外部处置结果${actionLabel}</button>`);
+      }else{
+        buttons.push(`<button class="btn sm" disabled>${write.recoveryVerified?'恢复已验证':'外部结果已登记'}${actionLabel}</button>`);
+      }
+    });
+    buttons.push(`<button class="btn ghost sm" onclick="openClose()" ${closed||!confirmed?'disabled':''}>${closed?'已关闭归档':'关闭并沉淀'}</button>`);
+    return buttons.join('');
+  }
+  function stepActionHtml(step){
+    if(step.done)return step.write?'<span class="doneflag">✓ 外部成功 · 已验证</span>':'<span class="doneflag">✓ 已完成</span>';
+    if(!step.write)return `<button class="btn sm" onclick="toast('${step.actMsg}','ic')">${step.act}</button>`;
+    const actionArg="decodeURIComponent('"+encoded(step.actionId)+"')";
+    return step.approved
+      ?`<button class="btn danger sm" onclick="openOutcome(${actionArg})">登记外部结果</button>`
+      :`<button class="btn danger sm" onclick="openWrite(${actionArg})">待审批 ⚠</button>`;
+  }
   window.openDetail=function(id){
     cur=DB.find(d=>d.id===id);const it=cur;
     if(!it){toast('未找到该诊断对象');return;}
     const cc=(it.conf==='高'?'var(--ok)':it.conf==='中'?'var(--warn)':'var(--crit)');
     const anom=it.ev.filter(e=>e.f==='anom').length;
+    const closureRecovered=Boolean(it.closure&&it.closure.recoveryVerified);
+    const closureLabels={recovered:'已恢复',false_positive:'误报',transferred_out:'转出本团队',unresolved:'未解决归档'};
     $('#crumb').textContent='工作台 / '+it.sys+' / '+(it.light?'轻接入':it.ecode)+' '+it.title;
     $('#detail').innerHTML=`
       <div class="ihead" style="--sevc:${sevColor[it.sev]||'var(--p2)'}">
-        <div class="row1"><span class="svb">${it.sev}</span><span class="syschip">${it.sys}</span><h2>${it.service} · ${it.title}</h2>
+        <div class="row1"><span class="svb">${it.sev}</span><span class="syschip">${it.sys}</span>${it.rehearsal?'<span class="autob suggest">合成演练</span>':''}<h2>${it.service} · ${it.title}</h2>
           <span class="ecb"${it.light?' style="color:var(--muted);background:var(--surface-3)"':''}>${it.light?'轻接入·无码':it.ecode}</span>
           <span class="status ${it.st}" id="stPill">${stLabel[it.st]}</span></div>
         <div class="row2">
@@ -526,6 +622,11 @@
           <span><b>影响</b> ${it.impact}</span><span><b>类型</b> ${it.type}</span><span><b>trace</b> <span class="mono">${it.trace}</span></span>
         </div>
       </div>
+      ${it.rehearsal?'<div class="rehearsal-note"><b>演练隔离</b><span>证据与处置结果均为合成 fixture；这里验证流程和合同，不代表生产结论，MetaClaw 不会执行生产写操作。</span></div>':''}
+      <div class="flow-wrap">
+        <div class="flow-meta"><span>CASE ${it.caseId||'离线样例'}</span><span>RUN ${it.runId||'离线样例'}</span></div>
+        <div class="flowbar">${flowHtml(it)}</div>
+      </div>
       <div class="cbody">
         <div class="panel">
           <h3>诊断结论</h3>
@@ -533,11 +634,12 @@
             <div class="meta"><span class="conf" style="color:${cc}"><span class="bars">${confBars(it.confN)}</span> 置信度 ${it.conf}</span>
             <span>命中 SOP <span class="mono">${it.sop}</span></span></div>
             ${it.warnings&&it.warnings.length?`<div class="sub2" style="margin-top:8px;color:var(--warn)">⚠ ${it.warnings.join(' · ')}</div>`:''}</div>
+          ${it.closure?`<div class="concl" style="border-color:${closureRecovered?'var(--ok)':'var(--line-strong)'};background:${closureRecovered?'var(--ok-soft)':'var(--surface)'}"><p class="cause">闭环结果 · ${it.closure.summary}</p><div class="meta"><span style="color:${closureRecovered?'var(--ok)':'var(--muted)'};font-weight:700">${closureRecovered?'✓ 恢复已验证':'关闭类型 · '+(closureLabels[it.closure.outcome]||it.closure.outcome)}</span>${it.closure.candidateId?`<span>知识候选 <span class="mono">${it.closure.candidateId}</span> · 待审核</span>`:''}</div></div>`:''}
           ${it.steps.length?`<h3 style="margin-top:4px">推荐路径 · 恢复动作三分级</h3>
           <div class="steps">${it.steps.map(s=>`
             <div class="rstep ${s.done?'done':''}"><span class="tier t-${s.tier}">${s.tl}</span>
               <div class="tx">${s.tx}<div class="sub2">${s.sub}</div></div>
-              ${s.done?'<span class="doneflag">✓ 已完成</span>':s.write?(s.approved?'<span class="doneflag">✓ 已批准 · 未执行</span>':'<button class="btn danger sm" onclick="openWrite()">待审批 ⚠</button>'):`<button class="btn sm" onclick="toast('${s.actMsg}','ic')">${s.act}</button>`}
+              ${stepActionHtml(s)}
             </div>`).join('')}</div>`:`<h3 style="margin-top:4px">恢复动作</h3><div class="concl"><p class="cause" style="font-size:13px">草案 SOP 或低置信诊断不输出恢复动作，请人工补证据。</p></div>`}
         </div>
         <div class="panel">
@@ -551,12 +653,7 @@
         </div>
       </div>
       <div class="tl-wrap"><h3>处置时间线 · 自动留痕</h3><ul class="tl" id="timeline">${tlHtml(it.tl)}</ul></div>
-      <div class="abar">
-        <button class="btn pri sm" id="cfBtn" onclick="confirmConcl()" ${it.st==='confirmed'||it.abstained?'disabled':''}>${it.st==='confirmed'?'已确认':it.abstained?'证据不足 · 待人工深查':'确认结论'}</button>
-        <button class="btn sm" onclick="openTransfer()">${it.apiBacked?'转派（未接入）':'转派'}</button>
-        ${it.steps.some(s=>s.write)?(it.steps.some(s=>s.write&&s.approved)?'<button class="btn sm" disabled>已批准 · 未执行</button>':'<button class="btn danger sm" onclick="openWrite()">审批写操作</button>'):''}
-        <button class="btn ghost sm" onclick="openClose()">${it.apiBacked?'关闭沉淀（未接入）':'关闭并沉淀'}</button>
-      </div>`;
+      <div class="abar">${actionButtonsHtml(it)}</div>`;
     $('#listView').style.display='none';$('#detailView').style.display='block';
     window.scrollTo(0,0);startSla(it);
   };
@@ -580,7 +677,7 @@
     if(cur.apiBacked){
       try{
         const updated=await apiJson('/v1/troubleshooting/diagnoses/'+encodeURIComponent(cur.diagnosisId)+'/confirm',{
-          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actor:'on-call'})
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actor:cur.rehearsal?'demo-on-call':'on-call'})
         });
         const item=replaceDiagnosis(updated);openDetail(item.id);toast('已通过 API 确认结论并留痕','ic');
       }catch(error){if(b)b.disabled=false;toast('确认失败：'+error.message);}
@@ -596,19 +693,23 @@
   overlay.addEventListener('click',e=>{if(e.target===overlay)closeOverlay();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlay();});
 
-  window.openWrite=function(){modal.innerHTML=`<h4><span class="warnico">⚠</span>批准生产写操作</h4>
+  function writeAction(actionId){return cur.steps.find(item=>item.write&&(!actionId||item.actionId===actionId));}
+  window.openWrite=function(actionId){
+    const step=writeAction(actionId);if(!step){toast('未找到指定写操作');return;}selectedActionId=step.actionId||'';
+    modal.innerHTML=`<h4><span class="warnico">⚠</span>批准生产写操作</h4>
     <p><b>MVP 仅记录人工批准，不直接执行生产写操作；生产执行器未连接。</b></p>
-    <div class="detail">服务　 ${cur.service}<br>依据　 SOP ${cur.sop}</div>
+    <div class="detail">动作　 ${step.tx}<br>服务　 ${cur.service}<br>动作 ID　 ${step.actionId||'离线样例'}<br>依据　 SOP ${cur.sop}</div>
     <label>批准原因（必填 · 记入审计）</label><textarea rows="2" id="wr" placeholder="填写批准理由"></textarea>
-    <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button><button class="btn danger sm" id="approveWriteBtn" onclick="doWrite()">确认批准</button></div>`;openOverlay();};
+    <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button><button class="btn danger sm" id="approveWriteBtn" onclick="doWrite()">确认批准</button></div>`;openOverlay();
+  };
   window.doWrite=async function(){
     const r=($('#wr').value||'').trim();if(!r){toast('请填写批准理由');return;}
-    const step=cur.steps.find(s=>s.write);
+    const step=writeAction(selectedActionId);if(!step){toast('指定写操作已不存在');return;}
     if(cur.apiBacked){
       const button=$('#approveWriteBtn');if(button)button.disabled=true;
       try{
         const updated=await apiJson('/v1/troubleshooting/diagnoses/'+encodeURIComponent(cur.diagnosisId)+'/actions/'+encodeURIComponent(step.actionId)+'/approve',{
-          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actor:'on-call',reason:r})
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actor:cur.rehearsal?'demo-on-call':'on-call',reason:r})
         });
         closeOverlay();const item=replaceDiagnosis(updated);openDetail(item.id);
         toast('已记录人工批准；生产写操作未执行','ic');
@@ -619,18 +720,102 @@
     openDetail(cur.id);toast('已记录人工批准；生产写操作未执行','ic');
   };
 
-  window.openTransfer=function(){if(cur.apiBacked){toast('MVP 尚未接入转派接口');return;}modal.innerHTML=`<h4>结构化转派</h4><p>整份故障上下文随工单流转，接手方无需重新排查。</p>
-    <div class="detail">error_code　 ${cur.ecode}<br>trace_id　　 ${cur.trace}<br>已确认证据　 ✓ 随工单携带</div>
-    <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button><button class="btn pri sm" onclick="doTransfer()">转派并同步群</button></div>`;openOverlay();};
-  window.doTransfer=function(){closeOverlay();const p=$('#stPill');if(p){p.className='status';p.textContent='已转派';}logTL('14:19:12','转派（携带完整上下文）','当班·人工');toast('已转派，上下文随工单同步','ic');};
+  window.openOutcome=function(actionId){
+    if(!cur.apiBacked){toast('离线样例不登记外部执行结果');return;}
+    const step=writeAction(actionId);if(!step){toast('未找到指定写操作');return;}selectedActionId=step.actionId;
+    modal.innerHTML=`<h4><span class="warnico">↗</span>登记外部人工处置结果</h4>
+      <p><b>这里只留痕，不会从 MetaClaw 执行生产操作。</b>请在外部环境完成处置后登记结果。</p>
+      <div class="detail">动作　 ${step.tx}<br>CASE　 ${cur.caseId}</div>
+      <label>外部执行结果</label><select id="outcomeStatus"><option value="succeeded">成功</option><option value="failed">失败</option><option value="skipped">未执行 / 跳过</option></select>
+      <label>结果说明（必填 · 审计留痕）</label><textarea rows="2" id="outcomeNotes" placeholder="例：已在演练环境完成恢复操作，探测恢复正常"></textarea>
+      <label class="check"><input type="checkbox" id="recoveryVerified" checked><span>已完成恢复验证（业务探测 / 指标回落）</span></label>
+      <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button><button class="btn pri sm" id="recordOutcomeBtn" onclick="doOutcome()">登记结果</button></div>`;
+    openOverlay();
+  };
+  window.doOutcome=async function(){
+    const step=writeAction(selectedActionId),outcome=$('#outcomeStatus').value;
+    if(!step){toast('指定写操作已不存在');return;}
+    const notes=($('#outcomeNotes').value||'').trim(),verified=$('#recoveryVerified').checked;
+    if(!notes){toast('请填写外部处置结果说明');return;}
+    if(outcome!=='succeeded'&&verified){toast('失败或跳过的处置不能标记恢复验证通过');return;}
+    const button=$('#recordOutcomeBtn');if(button)button.disabled=true;
+    try{
+      const updated=await apiJson('/v1/troubleshooting/diagnoses/'+encodeURIComponent(cur.diagnosisId)+'/actions/'+encodeURIComponent(step.actionId)+'/record-outcome',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actor:cur.rehearsal?'demo-dba':'on-call',outcome:outcome,notes:notes,recovery_verified:verified})
+      });
+      closeOverlay();const item=replaceDiagnosis(updated);openDetail(item.id);
+      toast(verified?'已登记外部结果，恢复验证通过':'已登记外部处置结果','ic');
+    }catch(error){if(button)button.disabled=false;toast('登记失败：'+error.message);}
+  };
 
-  window.openClose=function(){if(cur.apiBacked){toast('MVP 尚未接入关闭与沉淀接口');return;}modal.innerHTML=`<h4>关闭并沉淀</h4><p>处置过程将归档；可顺手修正 SOP 使其更准。</p>
-    <div class="detail">命中 SOP　 ${cur.sop}</div>
-    <label>修正 / 补充 SOP（可选 · 写回知识库）</label><textarea rows="2" id="sn" placeholder="例：补充 anomaly_criteria，减少误报"></textarea>
-    <div class="foot"><button class="btn ghost sm" onclick="doClose(false)">仅归档</button><button class="btn pri sm" onclick="doClose(true)">关闭并写回 SOP</button></div>`;openOverlay();};
-  window.doClose=function(wb){const n=($('#sn')&&$('#sn').value||'').trim();closeOverlay();cur.st='closed';
-    const p=$('#stPill');if(p){p.className='status closed';p.textContent='已关闭';}logTL('14:24:10','关闭工单，过程归档','当班·人工');
-    if(wb&&n)logTL('14:24:11','SOP 候选修正提交审核','闭环·Evolver');toast(wb?'已关闭，SOP 修正进入审核队列':'已归档关闭','ic');};
+  window.openTransfer=function(){
+    const defaultTeam=cur.rehearsal?'DBA 演练值班':cur.routeToTeam||'DBA 值班';
+    modal.innerHTML=`<h4>结构化转派</h4><p>根因、trace、证据索引和 case/run 会作为上下文快照随工单流转。</p>
+      <div class="detail">error_code　 ${cur.ecode}<br>trace_id　　 ${cur.trace}<br>CASE　　　　 ${cur.caseId||'—'}<br>已确认证据　 ${cur.ev.length} 项</div>
+      <label>目标团队</label><input type="text" id="transferTeam" value="${defaultTeam}">
+      <label>转派说明（必填）</label><textarea rows="2" id="transferNote">请按恢复方案处理，并回填外部处置结果</textarea>
+      <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button><button class="btn pri sm" id="transferBtn" onclick="doTransfer()">转派并携带上下文</button></div>`;
+    openOverlay();
+  };
+  window.doTransfer=async function(){
+    const team=($('#transferTeam').value||'').trim(),note=($('#transferNote').value||'').trim();
+    if(!team||!note){toast('请填写目标团队和转派说明');return;}
+    if(cur.apiBacked){
+      const button=$('#transferBtn');if(button)button.disabled=true;
+      try{
+        const updated=await apiJson('/v1/troubleshooting/diagnoses/'+encodeURIComponent(cur.diagnosisId)+'/transfer',{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actor:cur.rehearsal?'demo-on-call':'on-call',target_team:team,note:note})
+        });
+        closeOverlay();const item=replaceDiagnosis(updated);openDetail(item.id);
+        toast('已结构化转派，完整上下文快照已留痕','ic');
+      }catch(error){if(button)button.disabled=false;toast('转派失败：'+error.message);}
+      return;
+    }
+    closeOverlay();cur.st='transferred';logTL('14:19:12','转派（携带完整上下文）','当班·人工');openDetail(cur.id);
+    toast('已转派，上下文随工单同步','ic');
+  };
+
+  window.openClose=function(){
+    if(cur.apiBacked){
+      const recoveryVerified=recoveryComplete(cur);
+      modal.innerHTML=`<h4>关闭并沉淀</h4><p>恢复验证是“已恢复”关闭的硬门槛；知识只进入候选审核，不直接覆盖 SOP。</p>
+        <div class="detail">命中 SOP　 ${cur.sop}<br>CASE　　　 ${cur.caseId}<br>RUN　　　　${cur.runId}</div>
+        <label>关闭结果</label><select id="closeOutcome" onchange="syncCloseVerification()"><option value="recovered" ${recoveryVerified?'selected':''}>已恢复</option><option value="false_positive">误报</option><option value="transferred_out">转出本团队</option><option value="unresolved" ${recoveryVerified?'':'selected'}>未解决归档</option></select>
+        <label>关闭摘要（必填）</label><textarea rows="2" id="closeSummary" placeholder="例：连接恢复，业务探测通过"></textarea>
+        <label class="check"><input type="checkbox" id="closeVerified" ${recoveryVerified?'checked':'disabled'}><span>已核验业务恢复</span></label>
+        <label>补充 / 修正 SOP（可选）</label><textarea rows="2" id="closeFeedback" placeholder="例：补充连接池耗尽前的预警阈值"></textarea>
+        <label class="check"><input type="checkbox" id="createCandidate" checked><span>生成知识候选并进入人工审核队列</span></label>
+        <div class="foot"><button class="btn ghost sm" onclick="closeOverlay()">取消</button><button class="btn pri sm" id="closeBtn" onclick="doClose()">验证并关闭</button></div>`;
+      openOverlay();return;
+    }
+    modal.innerHTML=`<h4>关闭并沉淀</h4><p>处置过程将归档；可顺手修正 SOP 使其更准。</p>
+      <div class="detail">命中 SOP　 ${cur.sop}</div>
+      <label>修正 / 补充 SOP（可选 · 写回知识库）</label><textarea rows="2" id="sn" placeholder="例：补充 anomaly_criteria，减少误报"></textarea>
+      <div class="foot"><button class="btn ghost sm" onclick="doOfflineClose(false)">仅归档</button><button class="btn pri sm" onclick="doOfflineClose(true)">关闭并写回 SOP</button></div>`;
+    openOverlay();
+  };
+  window.syncCloseVerification=function(){
+    const checkbox=$('#closeVerified'),recovered=$('#closeOutcome').value==='recovered';
+    checkbox.disabled=!recovered;if(!recovered)checkbox.checked=false;
+  };
+  window.doClose=async function(){
+    const outcome=$('#closeOutcome').value,summary=($('#closeSummary').value||'').trim();
+    const verified=outcome==='recovered'&&$('#closeVerified').checked,feedback=($('#closeFeedback').value||'').trim();
+    const createCandidate=$('#createCandidate').checked;
+    if(!summary){toast('请填写关闭摘要');return;}
+    if(outcome==='recovered'&&!verified){toast('“已恢复”必须先完成恢复验证');return;}
+    const button=$('#closeBtn');if(button)button.disabled=true;
+    try{
+      const updated=await apiJson('/v1/troubleshooting/diagnoses/'+encodeURIComponent(cur.diagnosisId)+'/close',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actor:cur.rehearsal?'demo-on-call':'on-call',outcome:outcome,summary:summary,recovery_verified:verified,sop_feedback:feedback||null,create_knowledge_candidate:createCandidate})
+      });
+      closeOverlay();const item=replaceDiagnosis(updated);openDetail(item.id);
+      toast(createCandidate?'已关闭归档，知识候选进入审核队列':'已验证并关闭归档','ic');
+    }catch(error){if(button)button.disabled=false;toast('关闭失败：'+error.message);}
+  };
+  window.doOfflineClose=function(wb){const n=($('#sn')&&$('#sn').value||'').trim();closeOverlay();cur.st='closed';
+    logTL('14:24:10','关闭工单，过程归档','当班·人工');if(wb&&n)logTL('14:24:11','SOP 候选修正提交审核','闭环·Evolver');
+    openDetail(cur.id);toast(wb?'已关闭，SOP 修正进入审核队列':'已归档关闭','ic');};
 
   // ---- 手动录入（intake：贴日志/现象 → LLM 抽取 → 路由）----
   window.openIntake=function(){

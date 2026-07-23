@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
+from .clock import utc_now
 from .models import (
     ActionType,
     AnomalyCriterion,
@@ -24,10 +23,6 @@ from .models import (
     RecommendedAction,
     SopEntry,
 )
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def fixture_incident_903001() -> IncidentContext:
@@ -292,5 +287,5 @@ class FixtureEvidenceCollector:
             summary=summary,
             observed=observed,
             source=f"fixture:{self.scenario}",
-            collected_at=_now(),
+            collected_at=utc_now(),
         )

@@ -16,4 +16,21 @@ def build_fixture_orchestrator(scenario: str = "saturated") -> TroubleshootingOr
     )
 
 
-__all__ = ["build_fixture_orchestrator", "fixture_incident_903001"]
+def build_rehearsal_orchestrator_903001() -> TroubleshootingOrchestrator:
+    """Build an approved synthetic SOP isolated from the canonical CSDP route."""
+
+    sop = fixture_sop_903001().model_copy(deep=True)
+    sop.system = "CSDP-REHEARSAL"
+    sop.status = "approved"
+    sop.verified = True
+    return TroubleshootingOrchestrator(
+        sop_repository=InMemorySopRepository([sop]),
+        evidence_collector=FixtureEvidenceCollector(scenario="saturated"),
+    )
+
+
+__all__ = [
+    "build_fixture_orchestrator",
+    "build_rehearsal_orchestrator_903001",
+    "fixture_incident_903001",
+]

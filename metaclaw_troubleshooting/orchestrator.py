@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
+from .clock import utc_now
 from .models import (
     ActionType,
     AnomalyCriterion,
@@ -28,10 +28,6 @@ from .models import (
     TimelineEvent,
 )
 from .ports import EvidenceCollector, SopRepository
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def _number(observed: dict[str, Any], field: str) -> float | None:
@@ -142,6 +138,8 @@ class TroubleshootingOrchestrator:
 
         return Diagnosis(
             diagnosis_id=f"diag-{incident.incident_id}",
+            case_id=f"case-{incident.incident_id}",
+            run_id=f"run-{incident.incident_id}-001",
             incident=incident,
             route_mode=RouteMode.DETERMINISTIC,
             status=status,
@@ -191,7 +189,7 @@ class TroubleshootingOrchestrator:
             summary="自动取证不可用，需人工执行该取证项",
             observed={"error_type": error_type},
             source=f"{self.mode}:unavailable",
-            collected_at=_now(),
+            collected_at=utc_now(),
         )
 
     @staticmethod
@@ -239,6 +237,8 @@ class TroubleshootingOrchestrator:
     def _fallback(self, incident: IncidentContext) -> Diagnosis:
         return Diagnosis(
             diagnosis_id=f"diag-{incident.incident_id}",
+            case_id=f"case-{incident.incident_id}",
+            run_id=f"run-{incident.incident_id}-001",
             incident=incident,
             route_mode=RouteMode.LLM_FALLBACK,
             status=DiagnosisStatus.NEEDS_INVESTIGATION,
@@ -258,7 +258,7 @@ class TroubleshootingOrchestrator:
     @staticmethod
     def _event(event: str, actor: str, status: str = "done") -> TimelineEvent:
         return TimelineEvent(
-            timestamp=_now(),
+            timestamp=utc_now(),
             event=event,
             actor=actor,
             status=status,

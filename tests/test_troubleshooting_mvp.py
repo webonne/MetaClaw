@@ -259,6 +259,12 @@ class TroubleshootingApiTests(unittest.TestCase):
             action for action in diagnosis["recommended_actions"] if action["action_type"] == "manual_write"
         )
 
+        confirmed = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/confirm",
+            json={"actor": "on-call"},
+        )
+        self.assertEqual(confirmed.status_code, 200)
+
         approved = client.post(
             f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{write_action['action_id']}/approve",
             json={"actor": "on-call", "reason": "DBA 已确认维护窗口"},
@@ -280,6 +286,252 @@ class TroubleshootingApiTests(unittest.TestCase):
         )
         self.assertEqual(execution.status_code, 409)
         self.assertIn("not connected", execution.json()["detail"])
+
+    def test_rehearsal_903001_runs_the_full_human_controlled_flow(self):
+        client = TestClient(create_app(seed_demo=False))
+
+        created = client.post(
+            "/v1/troubleshooting/rehearsals/903001",
+            json={"actor": "demo-on-call"},
+        )
+
+        self.assertEqual(created.status_code, 201)
+        diagnosis = created.json()
+        diagnosis_id = diagnosis["diagnosis_id"]
+        self.assertTrue(diagnosis["rehearsal"])
+        self.assertTrue(diagnosis["fixture_mode"])
+        self.assertEqual(diagnosis["incident"]["system"], "CSDP-REHEARSAL")
+        self.assertEqual(diagnosis["status"], "ready_for_human")
+        self.assertEqual(diagnosis["confidence"], "high")
+        self.assertTrue(diagnosis["case_id"].startswith("case-"))
+        self.assertTrue(diagnosis["run_id"].startswith("run-"))
+        self.assertTrue(any("合成演练" in warning for warning in diagnosis["warnings"]))
+        self.assertEqual(client.get("/v1/troubleshooting/diagnoses").json(), [])
+        self.assertEqual(
+            len(client.get("/v1/troubleshooting/diagnoses?include_rehearsals=true").json()),
+            1,
+        )
+        write_action = next(
+            action for action in diagnosis["recommended_actions"] if action["action_type"] == "manual_write"
+        )
+
+        confirmed = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/confirm",
+            json={"actor": "demo-on-call"},
+        )
+        self.assertEqual(confirmed.status_code, 200)
+        self.assertEqual(confirmed.json()["status"], "confirmed")
+
+        transferred = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/transfer",
+            json={
+                "actor": "demo-on-call",
+                "target_team": "DBA 演练值班",
+                "note": "请按演练恢复方案处理",
+            },
+        )
+        self.assertEqual(transferred.status_code, 200)
+        transfer = transferred.json()["transfers"][-1]
+        self.assertEqual(transferred.json()["status"], "transferred")
+        self.assertEqual(transfer["target_team"], "DBA 演练值班")
+        self.assertEqual(transfer["context"]["case_id"], diagnosis["case_id"])
+        self.assertEqual(transfer["context"]["run_id"], diagnosis["run_id"])
+        self.assertEqual(
+            set(transfer["context"]["evidence_ids"]),
+            {"error-log", "mongo-metrics", "trace-db", "impact"},
+        )
+        self.assertEqual(transfer["context"]["root_cause"], diagnosis["root_cause"])
+
+        approved = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{write_action['action_id']}/approve",
+            json={"actor": "demo-dba", "reason": "演练维护窗口已确认"},
+        )
+        self.assertEqual(approved.status_code, 200)
+        self.assertEqual(approved.json()["pending_writes"], [])
+
+        recorded = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{write_action['action_id']}/record-outcome",
+            json={
+                "actor": "demo-dba",
+                "outcome": "succeeded",
+                "notes": "已在外部演练环境执行恢复操作",
+                "recovery_verified": True,
+            },
+        )
+        self.assertEqual(recorded.status_code, 200)
+        self.assertEqual(recorded.json()["action_outcomes"][-1]["outcome"], "succeeded")
+        self.assertTrue(recorded.json()["action_outcomes"][-1]["recovery_verified"])
+
+        closed = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/close",
+            json={
+                "actor": "demo-on-call",
+                "outcome": "recovered",
+                "summary": "MongoDB 连接恢复，业务探测通过",
+                "recovery_verified": True,
+                "sop_feedback": "补充连接池耗尽前的预警阈值",
+                "create_knowledge_candidate": True,
+            },
+        )
+        self.assertEqual(closed.status_code, 200)
+        body = closed.json()
+        self.assertEqual(body["status"], "closed")
+        self.assertEqual(body["closure"]["outcome"], "recovered")
+        self.assertTrue(body["closure"]["recovery_verified"])
+        self.assertEqual(len(body["knowledge_candidates"]), 1)
+        self.assertEqual(body["knowledge_candidates"][0]["status"], "candidate")
+        self.assertEqual(body["knowledge_candidates"][0]["source_case_id"], diagnosis["case_id"])
+        self.assertEqual(
+            {action["action_id"] for action in body["knowledge_candidates"][0]["recommended_actions"]},
+            {"retain-evidence", "contact-dba", "restart-mongodb"},
+        )
+        self.assertEqual(body["knowledge_candidates"][0]["action_outcomes"][0]["outcome"], "succeeded")
+        self.assertTrue(body["knowledge_candidates"][0]["action_outcomes"][0]["recovery_verified"])
+        self.assertEqual(
+            body["closure"]["knowledge_candidate_id"],
+            body["knowledge_candidates"][0]["candidate_id"],
+        )
+        timeline_text = " ".join(event["event"] for event in body["timeline"])
+        for expected in ("人工确认", "结构化转派", "人工批准", "外部处置结果", "恢复验证", "关闭归档", "知识候选"):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, timeline_text)
+
+        execution = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{write_action['action_id']}/execute"
+        )
+        self.assertEqual(execution.status_code, 409)
+        self.assertIn("not connected", execution.json()["detail"])
+
+    def test_workflow_rejects_skipping_confirmation_or_recovery_verification(self):
+        client = TestClient(create_app(seed_demo=False))
+        diagnosis = client.post(
+            "/v1/troubleshooting/rehearsals/903001",
+            json={"actor": "demo-on-call"},
+        ).json()
+        diagnosis_id = diagnosis["diagnosis_id"]
+        write_action = next(
+            action for action in diagnosis["recommended_actions"] if action["action_type"] == "manual_write"
+        )
+
+        before_confirmation = [
+            client.post(
+                f"/v1/troubleshooting/diagnoses/{diagnosis_id}/transfer",
+                json={"actor": "demo-on-call", "target_team": "DBA 演练值班", "note": "提前转派"},
+            ),
+            client.post(
+                f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{write_action['action_id']}/approve",
+                json={"actor": "demo-on-call", "reason": "提前批准"},
+            ),
+            client.post(
+                f"/v1/troubleshooting/diagnoses/{diagnosis_id}/close",
+                json={
+                    "actor": "demo-on-call",
+                    "outcome": "recovered",
+                    "summary": "跳过前序步骤",
+                    "recovery_verified": True,
+                },
+            ),
+        ]
+        self.assertTrue(all(response.status_code == 409 for response in before_confirmation))
+
+        confirmed = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/confirm",
+            json={"actor": "demo-on-call"},
+        )
+        self.assertEqual(confirmed.status_code, 200)
+        unverified_close = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/close",
+            json={
+                "actor": "demo-on-call",
+                "outcome": "recovered",
+                "summary": "尚未验证恢复",
+                "recovery_verified": False,
+            },
+        )
+        self.assertEqual(unverified_close.status_code, 409)
+        self.assertIn("recovery verification", unverified_close.json()["detail"])
+
+        pending_write_close = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/close",
+            json={
+                "actor": "demo-on-call",
+                "outcome": "recovered",
+                "summary": "试图绕过待审批写操作",
+                "recovery_verified": True,
+            },
+        )
+        self.assertEqual(pending_write_close.status_code, 409)
+        self.assertIn("pending manual writes", pending_write_close.json()["detail"])
+
+        unapproved_outcome = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{write_action['action_id']}/record-outcome",
+            json={
+                "actor": "demo-dba",
+                "outcome": "succeeded",
+                "notes": "试图跳过审批",
+                "recovery_verified": True,
+            },
+        )
+        self.assertEqual(unapproved_outcome.status_code, 409)
+        self.assertIn("approved", unapproved_outcome.json()["detail"])
+
+        approved = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/actions/{write_action['action_id']}/approve",
+            json={"actor": "demo-on-call", "reason": "演练审批"},
+        )
+        self.assertEqual(approved.status_code, 200)
+        close_without_outcome = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/close",
+            json={
+                "actor": "demo-on-call",
+                "outcome": "recovered",
+                "summary": "试图跳过外部处置结果",
+                "recovery_verified": True,
+            },
+        )
+        self.assertEqual(close_without_outcome.status_code, 409)
+        self.assertIn("external outcome", close_without_outcome.json()["detail"])
+
+    def test_false_positive_can_close_without_claiming_recovery(self):
+        client = TestClient(create_app(seed_demo=False))
+        diagnosis = client.post(
+            "/v1/troubleshooting/rehearsals/903001",
+            json={"actor": "demo-on-call"},
+        ).json()
+        diagnosis_id = diagnosis["diagnosis_id"]
+        client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/confirm",
+            json={"actor": "demo-on-call"},
+        )
+
+        invalid_recovery_claim = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/close",
+            json={
+                "actor": "demo-on-call",
+                "outcome": "false_positive",
+                "summary": "误报不应声明恢复验证",
+                "recovery_verified": True,
+            },
+        )
+        self.assertEqual(invalid_recovery_claim.status_code, 409)
+        self.assertIn("only recovered closure", invalid_recovery_claim.json()["detail"])
+
+        closed = client.post(
+            f"/v1/troubleshooting/diagnoses/{diagnosis_id}/close",
+            json={
+                "actor": "demo-on-call",
+                "outcome": "false_positive",
+                "summary": "确认是演练误报，未执行恢复动作",
+                "recovery_verified": False,
+                "create_knowledge_candidate": True,
+            },
+        )
+
+        self.assertEqual(closed.status_code, 200)
+        self.assertEqual(closed.json()["status"], "closed")
+        self.assertEqual(closed.json()["closure"]["outcome"], "false_positive")
+        self.assertFalse(closed.json()["closure"]["recovery_verified"])
+        self.assertEqual(closed.json()["knowledge_candidates"][0]["action_outcomes"], [])
 
     def test_api_deduplicates_same_composite_incident_key(self):
         client = TestClient(create_app(seed_demo=False))
@@ -317,8 +569,16 @@ class TroubleshootingApiTests(unittest.TestCase):
         self.assertIn('<meta charset="utf-8">', response.text.lower())
         self.assertIn('name="viewport"', response.text.lower())
         self.assertIn("/v1/troubleshooting/diagnoses", response.text)
+        self.assertIn("/v1/troubleshooting/rehearsals/903001", response.text)
+        self.assertIn("record-outcome", response.text)
+        self.assertIn("结构化转派", response.text)
+        self.assertIn("关闭并沉淀", response.text)
+        self.assertIn("function(actionId)", response.text)
+        self.assertIn("writes.every", response.text)
+        self.assertIn("include_rehearsals=true", response.text)
         self.assertIn("接口模式", response.text)
         self.assertIn("MVP 仅记录人工批准", response.text)
+        self.assertNotIn("转派（未接入）", response.text)
 
 
 if __name__ == "__main__":
