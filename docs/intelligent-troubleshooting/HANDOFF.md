@@ -58,7 +58,7 @@ docs/intelligent-troubleshooting/
 ├── README.md                     # 索引
 ├── HANDOFF.md                    # 本文件
 ├── executive-summary.html        # 给领导一页纸
-├── architecture-blueprint.html   # 蓝图 v0.3（15 节，D1–D6）
+├── architecture-blueprint.html   # 蓝图 v0.3（16 节，D1–D6 + 落地热力矩阵）
 ├── console-prototype.html        # 原型 A：单故障详情
 ├── console-prototype-b.html      # 原型 B：值班驾驶舱
 ├── console-workbench.html        # 工作台：列表→详情 + 系统维度 + 手动录入 + 自主档徽标
