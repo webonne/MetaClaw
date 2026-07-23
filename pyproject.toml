@@ -57,6 +57,7 @@ include = ["metaclaw*", "metaclaw_troubleshooting*"]
 
 [tool.setuptools.package-data]
 metaclaw = []
+metaclaw_troubleshooting = ["static/*.html", "migrations/*.sql"]
 
 [tool.ruff]
 line-length = 120

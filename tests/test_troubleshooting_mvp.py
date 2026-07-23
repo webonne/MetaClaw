@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import redirect_stderr
 from datetime import datetime, timezone
 from io import StringIO
+from pathlib import Path
 from threading import Barrier
 from unittest.mock import patch
 
@@ -413,7 +414,19 @@ class TroubleshootingEntrypointTests(unittest.TestCase):
     def test_entrypoint_accepts_loopback_binding(self, run_server):
         troubleshooting_main(["--host", "::1", "--port", "18083"])
 
-        run_server.assert_called_once_with("::1", 18083)
+        run_server.assert_called_once_with(
+            "::1",
+            18083,
+            Path.home() / ".metaclaw" / "troubleshooting.db",
+        )
+
+    @patch("metaclaw_troubleshooting.__main__._serve")
+    def test_entrypoint_accepts_explicit_database_path(self, run_server):
+        database_path = Path("/tmp/metaclaw-troubleshooting-test.db")
+
+        troubleshooting_main(["--database", str(database_path)])
+
+        run_server.assert_called_once_with("127.0.0.1", 18080, database_path)
 
     @patch("metaclaw_troubleshooting.__main__._serve")
     def test_entrypoint_rejects_non_loopback_binding_before_auth_exists(self, run_server):

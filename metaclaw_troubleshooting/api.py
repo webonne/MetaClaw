@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import logging
+from contextlib import asynccontextmanager
+from importlib import resources
 from pathlib import Path
 from uuid import uuid4
 
@@ -36,8 +39,11 @@ from .module import (
     TroubleshootingNotFound,
 )
 from .orchestrator import TroubleshootingOrchestrator
-from .repository import InMemoryDiagnosisRepository
+from .ports import DiagnosisRepository, RepositoryReadiness, RepositoryUnavailable
+from .repository import InMemoryDiagnosisRepository, SQLiteDiagnosisRepository
 from .workflow import WorkflowConflict
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(
@@ -45,9 +51,19 @@ def create_app(
     *,
     seed_demo: bool = True,
     workbench_path: Path | None = None,
+    diagnosis_repository: DiagnosisRepository | None = None,
+    database_path: str | Path | None = None,
 ) -> FastAPI:
+    if diagnosis_repository is not None and database_path is not None:
+        raise ValueError("pass diagnosis_repository or database_path, not both")
     orchestrator = orchestrator or build_fixture_orchestrator()
-    diagnoses = InMemoryDiagnosisRepository()
+    owns_repository = diagnosis_repository is None
+    if diagnosis_repository is not None:
+        diagnoses = diagnosis_repository
+    elif database_path is not None:
+        diagnoses = SQLiteDiagnosisRepository(database_path)
+    else:
+        diagnoses = InMemoryDiagnosisRepository()
     module = TroubleshootingModule(orchestrator=orchestrator, diagnoses=diagnoses)
     rehearsal_module = TroubleshootingModule(
         orchestrator=build_rehearsal_orchestrator_903001(),
@@ -56,16 +72,37 @@ def create_app(
     if seed_demo:
         module.diagnose(fixture_incident_903001())
 
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        yield
+        if owns_repository:
+            close = getattr(diagnoses, "close", None)
+            if close is not None:
+                close()
+
     app = FastAPI(
         title="MetaClaw Intelligent Troubleshooting MVP",
         version="0.1.0",
+        lifespan=lifespan,
     )
     app.state.troubleshooting = module
     app.state.troubleshooting_rehearsal = rehearsal_module
+    app.state.diagnosis_repository = diagnoses
     app.state.write_execution_enabled = False
-    resolved_workbench = workbench_path or (
-        Path(__file__).resolve().parents[1] / "docs" / "intelligent-troubleshooting" / "console-workbench.html"
+    resolved_workbench = workbench_path or resources.files("metaclaw_troubleshooting").joinpath(
+        "static",
+        "console-workbench.html",
     )
+
+    def storage_payload(readiness: RepositoryReadiness) -> dict[str, object]:
+        return {
+            "ready": readiness.ready,
+            "adapter": readiness.adapter,
+            "persistent": readiness.persistent,
+            "schema_version": readiness.schema_version,
+            "pending_publications": readiness.pending_publications,
+            "detail": readiness.detail,
+        }
 
     def get_diagnosis(diagnosis_id: str) -> Diagnosis:
         diagnosis = module.get(diagnosis_id)
@@ -113,6 +150,22 @@ def create_app(
             content={"code": error.code, "detail": str(error)},
         )
 
+    @app.exception_handler(RepositoryUnavailable)
+    async def repository_unavailable_handler(
+        _request: Request,
+        _error: RepositoryUnavailable,
+    ) -> JSONResponse:
+        error_id = f"storage-{uuid4().hex}"
+        logger.error("troubleshooting storage operation failed", extra={"error_id": error_id})
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "code": RepositoryUnavailable.code,
+                "detail": "troubleshooting storage unavailable",
+                "error_id": error_id,
+            },
+        )
+
     @app.get("/", include_in_schema=False)
     async def root() -> RedirectResponse:
         return RedirectResponse(url="/workbench")
@@ -123,6 +176,44 @@ def create_app(
             "ok": True,
             "mode": module.mode,
             "write_execution_enabled": module.write_execution_enabled,
+        }
+
+    @app.get("/readyz", response_model=None)
+    async def readyz() -> JSONResponse:
+        readiness = diagnoses.readiness()
+        if readiness.ready:
+            return JSONResponse(
+                content={
+                    "ok": True,
+                    "storage": storage_payload(readiness),
+                }
+            )
+        error_id = f"storage-{uuid4().hex}"
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "ok": False,
+                "code": RepositoryUnavailable.code,
+                "detail": "troubleshooting storage unavailable",
+                "error_id": error_id,
+                "storage": storage_payload(readiness),
+            },
+        )
+
+    @app.get("/v1/troubleshooting/capabilities")
+    async def capabilities() -> dict[str, object]:
+        readiness = diagnoses.readiness()
+        return {
+            "runtime_mode": module.mode,
+            "storage": storage_payload(readiness),
+            "knowledge_publication": {
+                "mode": "transactional_outbox",
+                "pending": readiness.pending_publications,
+                "publisher_connected": False,
+            },
+            "write_execution_enabled": module.write_execution_enabled,
+            "trusted_identity": False,
+            "loopback_only": True,
         }
 
     @app.get("/workbench", response_class=HTMLResponse, include_in_schema=False)

@@ -3,9 +3,33 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Protocol
+from dataclasses import dataclass
+from typing import List, Protocol
 
-from .models import Diagnosis, EvidenceQuery, EvidenceResult, IncidentContext, SopEntry
+from .models import (
+    Diagnosis,
+    EvidenceQuery,
+    EvidenceResult,
+    IncidentContext,
+    KnowledgePublication,
+    SopEntry,
+)
+
+
+class RepositoryUnavailable(RuntimeError):
+    """Raised when diagnosis state cannot be read or committed safely."""
+
+    code = "storage_unavailable"
+
+
+@dataclass(frozen=True)
+class RepositoryReadiness:
+    ready: bool
+    adapter: str
+    persistent: bool
+    schema_version: int | None
+    pending_publications: int | None
+    detail: str | None = None
 
 
 class DiagnosisRepository(Protocol):
@@ -22,6 +46,10 @@ class DiagnosisRepository(Protocol):
     def get(self, diagnosis_id: str) -> Diagnosis | None: ...
 
     def list(self, *, include_rehearsals: bool = False) -> list[Diagnosis]: ...
+
+    def pending_publications(self, *, limit: int = 100) -> List[KnowledgePublication]: ...
+
+    def readiness(self) -> RepositoryReadiness: ...
 
 
 class SopRepository(Protocol):

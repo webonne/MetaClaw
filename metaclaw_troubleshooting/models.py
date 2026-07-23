@@ -64,6 +64,12 @@ class KnowledgeCandidateStatus(str, Enum):
     CANDIDATE = "candidate"
 
 
+class KnowledgePublicationStatus(str, Enum):
+    PENDING = "pending"
+    PUBLISHED = "published"
+    FAILED = "failed"
+
+
 class EvidenceStatus(str, Enum):
     NORMAL = "normal"
     ANOMALY = "anomaly"
@@ -266,6 +272,21 @@ class KnowledgeCandidate(BaseModel):
     feedback: str | None = None
     created_by: str
     created_at: str
+
+
+class KnowledgePublication(BaseModel):
+    """Versioned outbox envelope owned by the troubleshooting module."""
+
+    publication_id: str
+    contract_version: str = "knowledge-candidate.v1"
+    diagnosis_id: str
+    candidate_id: str
+    payload: KnowledgeCandidate
+    status: KnowledgePublicationStatus = KnowledgePublicationStatus.PENDING
+    attempts: int = 0
+    last_error: str | None = None
+    created_at: str
+    updated_at: str
 
 
 class Diagnosis(BaseModel):
